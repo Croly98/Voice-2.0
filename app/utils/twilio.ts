@@ -11,6 +11,7 @@
 import twilio from 'twilio';
 
 // These values will also go in the .env.local file for security
+// will add tokens last
 const accountSid = process.env.TWILIO_ACCOUNT_SID!;
 const authToken = process.env.TWILIO_AUTH_TOKEN!;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER!;

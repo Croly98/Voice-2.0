@@ -1,6 +1,6 @@
 /**
  * tts.ts
- * 
+ * REMEMBER PACKAGES NEED TO BE INSTALLED!!!
  * Contains functions to interact with Text-to-Speech API (e.g., ElevenLabs or Google).
  * Converts GPT-generated text responses into audio URLs or streams.
  * Designed to allow easy swapping of TTS providers later.
@@ -56,3 +56,7 @@ export async function synthesizeSpeech(text: string): Promise<string> { // made 
   // Return the relative URL that frontend can access
   return `/audio/${filename}`;
 }
+
+// Note: The audio files are saved in the public/audio directory, 
+// so they can be accessed via a URL like /audio/unique-id.mp3
+// this might be handy to have at the start but maybe this can be deleted later

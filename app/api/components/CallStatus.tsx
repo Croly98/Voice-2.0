@@ -84,5 +84,5 @@ export default CallStatus;
 //Right now, we're faking the call status updates using hardcoded data and a timer.
 
 //But later, we’ll replace this part with real-time updates
-//Either using WebSocket (ideal for real-time apps) or by polling an API route like /api/status for the latest call info."
+//Either using Webrtc
 

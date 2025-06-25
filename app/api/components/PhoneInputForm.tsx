@@ -24,12 +24,12 @@ const PhoneInputForm: React.FC = () => {
    * 
    * Explanation:
    * /^          : start of string
-   * \+?         : optional '+' character at the start
+   * \+?         : optional '+' character at the start (i am guessing this we will call mobile numbers as well)
    * [1-9]       : first digit must be 1-9 (no leading zeros)
    * \d{1,14}    : followed by 1 to 14 digits (0-9)
    * $/          : end of string
    */
-   /* might change this so you can enter in the country code and then the number possibly need a plug in*/
+   /* might change this so you can enter in the country code and then the number, possibly need a plug in*/
 
   const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
@@ -39,7 +39,7 @@ const PhoneInputForm: React.FC = () => {
 
     // Validate phone number format using regex
     if (!phoneRegex.test(phone)) {
-      setMessage('Please enter a valid international phone number, e.g. +1234567890');
+      setMessage('Please enter a valid international phone number, e.g. +353...');
       return; // Do not proceed if invalid phone number
     }
 
