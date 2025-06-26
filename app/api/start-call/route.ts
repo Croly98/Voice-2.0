@@ -1,6 +1,7 @@
 // app/api/start-call/route.ts
 
 import { NextResponse } from 'next/server';
+// do I need v4 as uuidv4 for better session IDs?
 
 /**
  * API Route: /api/start-call

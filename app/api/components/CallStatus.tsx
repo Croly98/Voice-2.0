@@ -2,8 +2,9 @@
  * CallStatus.tsx
  * 
  * React component that displays the current status of the call.
- * Shows messages like "Calling..., "Connected", "Customer responded", will this be variables?
- * Used to keep the sales rep informed about what's happening in real-time. - not sure how to do this yet
+ * Shows messages like "Calling", "Connected", "Customer responded".
+ * These will be variables updated in real-time.
+ * Used to keep the sales rep informed about what's happening in real-time.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -11,25 +12,21 @@ import React, { useEffect, useState } from 'react';
 // Allows this component to be reused with different phone numbers
 interface CallStatusProps {
   phoneNumber: string;
+  liveStatusUpdate?: string; // Real-time update (optional prop)
+  simulate?: boolean;        // Toggle simulation mode for testing/demo
 }
 
-const CallStatus: React.FC<CallStatusProps> = ({ phoneNumber }) => {
+const CallStatus: React.FC<CallStatusProps> = ({ phoneNumber, liveStatusUpdate, simulate = false }) => {
   // State to store status updates for the current call session
   const [statuses, setStatuses] = useState<string[]>([]);
 
   /**
-   * Simulated effect for receiving real-time call status updates.
-   * THIS WILL BE CHANGED WITH WEB SOCKETS OR POLLING IN A REAL APP.
-   * In a real-world implementation:
-   * - This could be replaced with WebSocket logic to listen to events
-   *   from the backend in real time.
-   * - Alternatively, we could poll a `/status` endpoint every few seconds
-   *   to get the latest call state.
+   * Simulation for demo purposes only.
+   * This will be replaced with real-time updates passed from WebRTC or another logic source.
    */
   useEffect(() => {
-    if (!phoneNumber) return;
+    if (!simulate || !phoneNumber) return;
 
-    // Simulated list of status updates for demonstration purposes (for testing, this will change)
     const simulatedUpdates = [
       'Call initiated',
       'Dialing customer...',
@@ -39,21 +36,28 @@ const CallStatus: React.FC<CallStatusProps> = ({ phoneNumber }) => {
       'Call ended',
     ];
 
-    // Delay sending updates one at a time for a real-time feel
     let i = 0;
     const interval = setInterval(() => {
       if (i < simulatedUpdates.length) {
-        // Append new status to the log
         setStatuses(prev => [...prev, simulatedUpdates[i]]);
         i++;
       } else {
-        clearInterval(interval); // Stop after last update
+        clearInterval(interval);
       }
-    }, 1500); // 1.5 seconds between status updates
+    }, 1000);
 
-    // Cleanup function to prevent memory leaks
     return () => clearInterval(interval);
-  }, [phoneNumber]);
+  }, [simulate, phoneNumber]);
+
+  /**
+   * Accepts new status messages passed in via props
+   * For use with real-time events (e.g., from WebRTC callbacks)
+   */
+  useEffect(() => {
+    if (liveStatusUpdate) {
+      setStatuses(prev => [...prev, liveStatusUpdate]);
+    }
+  }, [liveStatusUpdate]);
 
   return (
     <div style={{ marginTop: '2rem' }}>
@@ -73,16 +77,14 @@ const CallStatus: React.FC<CallStatusProps> = ({ phoneNumber }) => {
       </ul>
 
       {/* If no statuses yet, show a placeholder */}
-      {statuses.length === 0 && <p> 📞 Waiting for call status updates...</p>}
+      {statuses.length === 0 && <p>📞 Waiting for call status updates...</p>}
     </div>
   );
 };
 
 export default CallStatus;
 
-
-//Right now, we're faking the call status updates using hardcoded data and a timer.
-
-//But later, we’ll replace this part with real-time updates
-//Either using Webrtc
-
+// Right now, we're faking the call status updates using hardcoded data and a timer.
+// But later, we’ll replace this part with real-time updates,
+// Either using WebSocket, polling, or passed directly from WebRTC logic.
+// This will allow the sales rep to see live updates as the call progresses.

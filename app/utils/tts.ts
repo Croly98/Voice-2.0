@@ -1,62 +1,41 @@
 /**
- * tts.ts
- * REMEMBER PACKAGES NEED TO BE INSTALLED!!!
- * Contains functions to interact with Text-to-Speech API (e.g., ElevenLabs or Google).
- * Converts GPT-generated text responses into audio URLs or streams.
- * Designed to allow easy swapping of TTS providers later.
+ * tts.ts (WebRTC-ready version)
+ * Uses Google Cloud TTS to convert text into speech and returns raw audio bytes.
+ * No file system used — ready to stream via WebRTC, WebSocket, etc.
  */
 
-// utils/tts.ts
+import textToSpeech from '@google-cloud/text-to-speech'; // Google TTS client
 
-// add keys later + install google-cloud text to speech later!
-// might add ElevenLabs TTS later, 
-
-import fs from 'fs/promises'; // Use promises-based fs for async file operations (will have to look into this)
-import path from 'path'; // imports the path module from Node.js (make sure I have that set up)
-import { v4 as uuidv4 } from 'uuid'; // a v4 method from the uuid package to generate unique identifiers (UUIDs) for audio files
-import textToSpeech from '@google-cloud/text-to-speech'; //Imports the Google Cloud Text-to-Speech client library. (havent installed yet)
-
-// Create a client instance for Google Cloud Text-to-Speech
+// Initialize Google Cloud TTS client
 const client = new textToSpeech.TextToSpeechClient();
 
 /**
- * Converts text into speech audio and saves it as an mp3 file.
- * @param text The text to synthesize. (text that the AI wants to say out loud)
- * @returns The relative URL or path to the saved audio file. (the url path to the audio file to relay to the customer?)*/
-
-//  This function will be used to convert the AI's text response into an audio file that can be played back to the customer during the call.
-export async function synthesizeSpeech(text: string): Promise<string> { // made avaible to other files, async works on a promise-based system,
-  
-    // Build the request for Google TTS
+ * Synthesizes speech from text and returns the raw audio buffer.
+ * Ideal for real-time streaming over WebRTC.
+ *
+ * @param text - The text to convert into speech
+ * @returns A Buffer of audio data (MP3 format)
+ */
+export async function synthesizeSpeechBuffer(text: string): Promise<Buffer> {
+  // Google TTS request config
   const request = {
     input: { text },
-    voice: { languageCode: 'en-IRE', ssmlGender: 'NEUTRAL' }, // might change accent later
-    audioConfig: { audioEncoding: 'MP3' },
+    voice: {
+      languageCode: 'en-IE', // Irish English
+      ssmlGender: 'NEUTRAL',
+    },
+    audioConfig: {
+      audioEncoding: 'MP3', // might change to something else if mp3 is not good enough
+    },
   };
 
-  // Call the Text-to-Speech API
+  // Make the TTS API call
   const [response] = await client.synthesizeSpeech(request);
 
   if (!response.audioContent) {
     throw new Error('No audio content received from Google TTS');
   }
 
-  // Generate a unique filename
-  const filename = `${uuidv4()}.mp3`;
-
-  // Define the folder where to save audio files — adjust this path to your public directory or wherever you serve static assets
-  const outputDir = path.resolve('./public/audio'); // THIS SHOULD BE MADE AUTOMATICALLY (if not make it)
-  await fs.mkdir(outputDir, { recursive: true }); // ensure directory exists (outputDir path where audio files are saved, goes to directory, creates it if it doesn't exist, recursive: true means it will create any missing parent directories as well)
-
-  const filePath = path.join(outputDir, filename);
-
-  // Write the binary audio content to a file
-  await fs.writeFile(filePath, response.audioContent, 'binary');
-
-  // Return the relative URL that frontend can access
-  return `/audio/${filename}`;
+  // Return raw audio content as Buffer
+  return Buffer.from(response.audioContent as Uint8Array);
 }
-
-// Note: The audio files are saved in the public/audio directory, 
-// so they can be accessed via a URL like /audio/unique-id.mp3
-// this might be handy to have at the start but maybe this can be deleted later
