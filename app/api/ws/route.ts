@@ -52,6 +52,13 @@ export function setupWebSocketServer(server: Server) { // takes an HTTP server i
       if (sessions[sessionId].length === 0) { 
         delete sessions[sessionId];
       }
+    // error handling  
+      ws.on('error', (err) => {
+        console.error(`WebSocket error in session ${sessionId}:`, err);
+      });
+
     });
   });
 }
+
+// had AI look at my code and it recommends adding ping/pong to keep the connection alive?

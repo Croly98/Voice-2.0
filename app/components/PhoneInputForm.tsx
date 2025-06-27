@@ -6,7 +6,11 @@
  * Handles form validation and UI for phone input.
  */
 
-import React, { useState, useRef, useEffect } from 'react'; // Import React and hooks
+import React, { useState, useRef, useEffect } from 'react';
+
+interface PhoneInputFormProps {
+  onSessionCreated: (sessionId: string) => void;
+}
 
 // Regex to validate international phone numbers.
 //
@@ -19,7 +23,7 @@ import React, { useState, useRef, useEffect } from 'react'; // Import React and 
 //
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
-const PhoneInputForm: React.FC = () => {
+const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated }) => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -52,10 +56,12 @@ const PhoneInputForm: React.FC = () => {
         body: JSON.stringify({ phoneNumber: trimmedPhone }),
       });
 
-      if (res.ok) {
+      const data = await res.json();
+
+      if (res.ok && data.sessionId) {
         setMessage('✅ Call initiated successfully!');
+        onSessionCreated(data.sessionId); // ✅ Pass session ID to parent
       } else {
-        const data = await res.json();
         setMessage(data.error || '❌ Failed to start call. Check the number or connection.');
       }
     } catch (error: any) {
@@ -86,7 +92,7 @@ const PhoneInputForm: React.FC = () => {
         }}
       />
       <small id="phoneHelp" style={{ display: 'block', marginBottom: '8px', color: '#666' }}>
-        Enter phone number in international format (e.g. +1234567890)
+        Enter phone number in international format (e.g. +353861790710)
       </small>
       <button
         type="submit"
