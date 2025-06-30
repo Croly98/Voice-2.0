@@ -99,8 +99,9 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated }) => 
         disabled={loading}
         style={{
           marginTop: '12px',
-          padding: '8px 12px',
-          backgroundColor: loading ? '#ccc' : '#007bff',
+          padding: '10px 12px',
+          width: '30%',
+          backgroundColor: loading ? '#ccc' : '#28a745',
           color: '#fff',
           border: 'none',
           borderRadius: '4px',

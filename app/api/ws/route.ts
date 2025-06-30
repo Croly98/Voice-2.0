@@ -2,63 +2,93 @@
 
 // WebSocket server setup for handling real-time communication in a WebRTC session
 
-//Keeps the connection open
+// Keeps the connection open
 
-//Allows both the client and server to send messages at any time
+// Allows both the client and server to send messages at any time
 
-//Is ideal for real-time apps (chat, games, live updates, etc.)
+// Is ideal for real-time apps (chat, games, live updates, etc.)
 
-import { WebSocketServer } from 'ws'; //fix
-import { NextApiRequest } from 'next'; //fix
+// breakdown
+// accepts audio data from the client (microphone input),
+// transcribes it to text using speech-to-text,
+// sends the text to OpenAI's GPT-4o for a response,
+// converts ais reply to audio using text-to-speech,
+// sends the audio back to the client
+
+// imports
+import { WebSocketServer } from 'ws';
 import { Server } from 'http';
+import { TextToSpeechClient } from '@google-cloud/text-to-speech';
+import { SpeechClient } from '@google-cloud/speech';
+import { OpenAI } from 'openai';
+import { transcribeMP3 } from '@/utils/stt';
+import { synthesizeSpeechBuffer as synthesizeSpeech } from '@/utils/tts';
 
-const sessions: Record<string, WebSocket[]> = {}; // creates a object called sessions, this will be used to store WebSocket connections for each session ID
+// keeps of connected clients using dictionary where: key sessionId, value is an array of WebSocket connections
+const sessions: Record<string, WebSocket[]> = {};
 
-export function setupWebSocketServer(server: Server) { // takes an HTTP server instance as an argument, this is the server that will handle WebSocket connections
-  const wss = new WebSocketServer({ server }); // uses a websocket server (the plans), passing the HTTP server instance (instance= the build and turn it on) to it, this allows the WebSocket server to listen for incoming connections on the same port as the HTTP server
+// these initalize the openAI, tts and sst
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ttsClient = new TextToSpeechClient();
+const sttClient = new SpeechClient();
 
-  wss.on('connection', (ws, req) => { // listens for new WebSocket connections, when a new client connects, it triggers this callback function
-    // Extract sessionId from query string 
-    const url = new URL(req.url || '', 'http://localhost'); // is the path (tell the server which endpoint the client wants to connect to) and query string part of the incoming request (tell what session the client wants to join), req.url is the URL of the incoming request, we use a default base URL (http://localhost) to create a full URL object, this allows us to easily access query parameters
-    // If the URL is not provided, we use a default base URL to avoid errors
-    const sessionId = url.searchParams.get('sessionId'); // Pulls out the sessionId from the query string
+// this function attaches the websocket server to an existing HTTP server
+export function setupWebSocketServer(server: Server) {
+  const wss = new WebSocketServer({ server });
 
-    // If session cannot be found, close the connection
+  // when client connects, it will be assigned a sessionId using the URL query parameter (/ws)
+  wss.on('connection', (ws, req) => {
+    const url = new URL(req.url || '', 'http://localhost');
+    const sessionId = url.searchParams.get('sessionId');
+
+    // Validate sessionId. error if not provided
     if (!sessionId) {
       ws.close(1008, 'Missing sessionId');
       return;
     }
 
-    // Add client to session
-    sessions[sessionId] = sessions[sessionId] || []; // checks if the session already exists in the sessions object, if it does not exist, it initializes it as an empty array, this allows us to store multiple WebSocket connections for the same session ID
-    sessions[sessionId].push(ws); // This line adds that connection to the array of connections for this sessionId
+    // adds the cust to the list of connected sockets under the sessionId
+    sessions[sessionId] = sessions[sessionId] || [];
+    sessions[sessionId].push(ws);
 
-    console.log(`Client joined session!: ${sessionId}`); // Log the session ID when a client connects
+    console.log(`Client joined session: ${sessionId}`);
 
-    // Relay messages between clients in same session
-    ws.on('message', (message) => { // listens for incoming messages
-      const peers = sessions[sessionId] || [];
-      for (const peer of peers) { // get all connected clients in the same session
-        if (peer !== ws && peer.readyState === WebSocket.OPEN) { // makes sure each message is only sent to other peers in the same session, and that the peer is still connected (readyState === WebSocket.OPEN)
-          peer.send(message); // send the received message to each peer 
+    // receiving audio message
+
+    // this triggers when the clients sends a message (binary- audio data)
+    ws.on('message', async (message: Buffer) => {
+      try {
+        const transcript = await transcribeMP3(message); // the message (audio buffer) is transcribed to text using transscribeMP3 function
+        if (!transcript) return;
+
+        const aiReply = await getAIResponse(transcript); // sends the transcript to OpenAI's GPT-4o to get a response
+        const audioBuffer = await synthesizeSpeech(aiReply); // converts OpenAI's response back to audio
+
+        // Send audio back only to the sender
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(audioBuffer);
+        }
+      } catch (err) {
+        console.error('Error processing audio message:', err);
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ error: 'Processing failed' }));
         }
       }
     });
 
-    // Remove client on disconnect
-    ws.on('close', () => { //listens for the close event, which is triggered when a client disconnects
+    // closing
+
+    // removes the websocket from the session when disconnected
+    // when everyone has left, session is deleted
+    ws.on('close', () => {
       sessions[sessionId] = (sessions[sessionId] || []).filter((client) => client !== ws);
-    // if not clients remain in the session, kill the session  
-      if (sessions[sessionId].length === 0) { 
+      if (sessions[sessionId].length === 0) {
         delete sessions[sessionId];
       }
-    // error handling  
-      ws.on('error', (err) => {
-        console.error(`WebSocket error in session ${sessionId}:`, err);
-      });
+    });
 
+    ws.on('error', (err) => {
+      console.error(`WebSocket error in session ${sessionId}:`, err);
     });
   });
 }
-
-// had AI look at my code and it recommends adding ping/pong to keep the connection alive?

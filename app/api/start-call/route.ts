@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
+    // wait is this even being used for anyting???
     // Parse JSON body (parse=turning block of text into real data, i believe?)
     const body = await req.json(); //takes the text from the request body and parses it into a JavaScript object (so it can read it)
 

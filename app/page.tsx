@@ -1,3 +1,9 @@
+// displays a form for initating a a call (PhoneInputForm)
+// shows the current call status (CallStatus) once a session is created
+// contains a centered layout with a logo and footer
+// uses Tailwind CSS for styling
+// uses React hooks for state management
+
 'use client';
 
 import PhoneInputForm from './components/PhoneInputForm';
@@ -9,25 +15,29 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gray-100">
-      {/* Logo */}
-      <Image 
-        src="/logo.png" 
-        alt="Company Logo" 
-        width={100} 
-        height={100} 
-        className="mb-4"
-      />
+    <main className="flex min-h-screen flex-col bg-gray-100 p-8">
+      {/* Content container - grows and centers content */}
+      <div className="flex flex-col items-center justify-center flex-grow">
+        {/* Logo */}
+        <Image
+          src="/logo.png"
+          alt="Company Logo"
+          width={100}
+          height={100}
+          className="mb-4"
+        />
 
-      <h1 className="text-3xl font-bold mb-6">AI Sales Call Assistant</h1>
+        <h1 className="text-3xl font-bold mb-6">AI Sales Call Assistant</h1>
 
-      {!sessionId && (
-        <PhoneInputForm onSessionCreated={setSessionId} />
-      )}
+        {!sessionId && <PhoneInputForm onSessionCreated={setSessionId} />}
 
-      {sessionId && (
-        <CallStatus sessionId={sessionId} />
-      )}
+        {sessionId && <CallStatus sessionId={sessionId} />}
+      </div>
+
+      {/* Footer stays at bottom */}
+      <footer className="text-gray-600 text-sm text-center pt-8">
+        © 2025 Zeus Packaging Group
+      </footer>
     </main>
   );
 }

@@ -1,4 +1,17 @@
 
+// AudioStream.tsx
+
+// captures audio from the user's microphone
+// sends the audio to the backend via websocket (using the correct sessionId)
+// Does NOT display anything visually
+
+// steps:
+// 1. waits until a sessionId is provided (knows what "room" to stream to)
+// 2. Opens a WebSocket connection to the backend server with the sessionId as a query parameter
+// 3. Requests microphone access from the user
+// 4. Captures audio from the microphone in small chunks (250ms)
+// 5. Sends each audio chunk to the WebSocket server
+// 6. Cleans up (disconnects WebSocket) when the component unmounts or session changes
 
 
 
@@ -27,7 +40,7 @@ export default function AudioStream({ sessionId }: { sessionId: string }) {
       ws.onclose = (event) => {
         console.log('WebSocket closed:', event);
       };
-
+      // log any errors that occur
       ws.onerror = (err) => {
         console.error('WebSocket error:', err);
       };

@@ -8,7 +8,7 @@
 
 // utils/twilio.ts
 
-import twilio from 'twilio';
+/* import twilio from 'twilio';
 
 // These values will also go in the .env.local file for security
 // will add tokens last
@@ -26,6 +26,7 @@ const client = twilio(accountSid, authToken);
  * @returns Twilio call object or error
  */
 
+/*
 export async function initiateCall(toPhoneNumber: string) {
   try {
     const call = await client.calls.create({

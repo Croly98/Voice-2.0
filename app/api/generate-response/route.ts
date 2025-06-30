@@ -8,9 +8,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getGptResponse } from '../../../utils/gpt';     // Calls OpenAI GPT, sends transcript, gets AI reply text
-import { synthesizeSpeech } from '../../../utils/tts';   // Converts AI reply text to speech/audio file or stream
-
+import { getGptResponse } from '../../utils/gpt';     // Calls OpenAI GPT, sends transcript, gets AI reply text
+import { synthesizeSpeech } from '../../utils/tts';   // Converts AI reply text to speech/audio file or stream
+// IS THIS THE ^  CORRECT FUNCTION NAME
 export async function POST(req: Request) {
   try {
     // Step 1: Parse the incoming JSON request containing the transcript text (the one the customer gave)

@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import useAudioPlayer from '../utils/hooks/useAudioPlayer'; // 🎧 Import the audio hook
 
 // Allows this component to be reused with different phone numbers
 interface CallStatusProps {
@@ -19,6 +20,47 @@ interface CallStatusProps {
 const CallStatus: React.FC<CallStatusProps> = ({ phoneNumber, liveStatusUpdate, simulate = false }) => {
   // State to store status updates for the current call session
   const [statuses, setStatuses] = useState<string[]>([]);
+
+  // 🎧 Setup audio player
+  const { playAudioBuffer } = useAudioPlayer();
+
+  // 🎧 Create WebSocket connection and listen for audio
+  useEffect(() => {
+    if (!phoneNumber || simulate) return;
+
+    const sessionId = phoneNumber; // You can customize how sessionId is derived
+    const socket = new WebSocket(`ws://localhost:3001?sessionId=${sessionId}`);
+
+    socket.onmessage = async (event) => {
+      if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
+        const arrayBuffer = event.data instanceof Blob
+          ? await event.data.arrayBuffer()
+          : event.data;
+
+        await playAudioBuffer(arrayBuffer); // 🎧 Play the audio reply
+        setStatuses(prev => [...prev, 'AI responded with audio']);
+      } else {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.error) {
+            console.warn('AI response error:', msg.error);
+            setStatuses(prev => [...prev, `⚠️ AI Error: ${msg.error}`]);
+          }
+        } catch {
+          console.log('Received unknown message:', event.data);
+        }
+      }
+    };
+
+    socket.onerror = (err) => {
+      console.error('WebSocket error:', err);
+      setStatuses(prev => [...prev, '⚠️ WebSocket error occurred']);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [phoneNumber, simulate, playAudioBuffer]);
 
   /**
    * Simulation for demo purposes only.

@@ -41,7 +41,7 @@ export async function transcribeAudio(audioPath: string): Promise<string> {
   
     const config = {
       encoding: 'MP3', // encoded for MP3
-      sampleRateHertz: 44100, // Standard sample rate (not sure if this is the correct one)
+      sampleRateHertz: 16000, // Standard sample rate (not sure if this is the correct one, I found some say 16k vs 44100)
       languageCode: 'en-IE', // English w/ Irish accent
     };
   
