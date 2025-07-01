@@ -42,7 +42,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated }) => 
 
     // Validate phone number format using regex
     if (!phoneRegex.test(trimmedPhone)) {
-      setMessage('Please enter a valid international phone number, e.g. +353...');
+      setMessage('Enter a valid international phone number, e.g. +353...');
       return;
     }
 
