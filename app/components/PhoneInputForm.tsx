@@ -16,7 +16,7 @@ interface PhoneInputFormProps {
 //
 // Explanation:
 // /^          : start of string
-// \+?         : optional '+' character at the start (i am guessing this we will call mobile numbers as well)
+// \+?         : optional '+' character at the start (has to be + later on)
 // [1-9]       : first digit must be 1-9 (no leading zeros)
 // \d{1,14}    : followed by 1 to 14 digits (0-9)
 // $/          : end of string
