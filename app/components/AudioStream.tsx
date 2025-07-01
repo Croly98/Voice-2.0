@@ -20,15 +20,16 @@
 
 import { useEffect, useRef } from 'react'; // Effect: run code after the component loads, Ref: stores the websocket
 
-export default function AudioStream({ sessionId }: { sessionId: string }) { 
   // React component that takes session Id, used to identify room/session
-  const wsRef = useRef<WebSocket | null>(null); 
+export default function AudioStream({ sessionId }: { sessionId: string }) { 
   // sets up persistent reference to the WebSocket connection, so it doesn't get recreated on every render
+  const wsRef = useRef<WebSocket | null>(null); 
+
 
   // connect to websocket @ws, include sessionId as a query parameter, so the server knows which session/room this user belongs to
   useEffect(() => {
     const connectWebSocket = () => {
-      const ws = new WebSocket(`ws://localhost:3000/api/ws?sessionId=${sessionId}`);
+      const ws = new WebSocket(`ws://localhost:3000/api/ws?sessionId=${sessionId}`); //will have to change to server when deployed
       wsRef.current = ws; // stores the WebSocket instance in the ref, so it can be accessed later
 
       // log when connection opens

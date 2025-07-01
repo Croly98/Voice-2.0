@@ -87,11 +87,12 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated }) => 
           width: '100%',
           padding: '8px',
           marginTop: '4px',
-          border: '1px solid #ccc',
+          border: '1px solid black', // border black line
           borderRadius: '4px',
-        }}
+          backgroundColor: 'white', // white box
+}}
       />
-      <small id="phoneHelp" style={{ display: 'block', marginBottom: '8px', color: '#666' }}>
+      <small id="phoneHelp" style={{ display: 'block', marginBottom: '8px', color: 'black' }}>
         Enter phone number in international format (e.g. +353861790710)
       </small>
       <button

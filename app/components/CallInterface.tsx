@@ -46,7 +46,7 @@ const CallInterface: React.FC<{ sessionId: string; phoneNumber: string }> = ({ s
     <div>
       <h1>Live Call Interface</h1>
 
-      <button onClick={handleTestSend}>📤 Send Test Audio to Server</button>
+      <button onClick={handleTestSend}>📧 Send Test Audio to Server</button>
 
       <CallStatus phoneNumber={phoneNumber} liveStatusUpdate={status} />
     </div>
