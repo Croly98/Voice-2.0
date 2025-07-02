@@ -22,7 +22,7 @@ export default function useAudioPlayer() {
   const playAudioBuffer = async (data: ArrayBuffer) => {
     const context = audioContextRef.current!;
 
-//decodes the binary audi into an audio bugger the browser can understand
+//decodes the binary audio into an audio buffer the browser can understand
     try { 
       const buffer = await context.decodeAudioData(data);
 

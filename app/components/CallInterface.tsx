@@ -18,19 +18,19 @@
 
 import React, { useEffect, useState } from 'react';
 import CallStatus from './CallStatus'; // 
-import { useWebSocket } from '/app/utils/hooks/useWebSocket'; // 
-import { useAudioPlayer } from 'utils/hooks/useAudioPlayer'; // 
+import useWebSocket  from '../utils/hooks/useWebSocket'; // 
+import useAudioPlayer from '../utils/hooks/useAudioPlayer'; // 
 
 const CallInterface: React.FC<{ sessionId: string; phoneNumber: string }> = ({ sessionId, phoneNumber }) => {
   const [status, setStatus] = useState<string | undefined>('Call started...');
   const { audioData, sendAudio } = useWebSocket(sessionId);
-  const { playAudio } = useAudioPlayer();
+  const { playAudioBuffer } = useAudioPlayer();
 
   // Play AI response when audio is received
   useEffect(() => {
     if (audioData) {
       setStatus('AI is speaking...');
-      playAudio(audioData);
+      playAudioBuffer(audioData);
     }
   }, [audioData]);
 

@@ -1,4 +1,10 @@
 /**
+ * // TEMPORARY / TESTING COMPONENT
+// This file/component is currently used for testing and development purposes only.
+// It will be removed once the call interface and flow are fully implemented and stable.
+// Remember to delete this file and all its references when done.
+
+ * 
  * PhoneInputForm.tsx
  *
  * React component with a form that allows a sales rep to input a customer's phone number easily.
@@ -6,10 +12,16 @@
  * Handles form validation and UI for phone input.
  */
 
+// TEMPORARY / TESTING COMPONENT
+// This component handles phone input and call initiation for testing.
+// It should be deleted or replaced when integrating the final production components.
+
+
 import React, { useState, useRef, useEffect } from 'react';
 
 interface PhoneInputFormProps {
   onSessionCreated: (sessionId: string) => void;
+  onPhoneNumberEntered: (phoneNumber: string) => void; // new prop
 }
 
 // Regex to validate international phone numbers.
@@ -23,7 +35,7 @@ interface PhoneInputFormProps {
 //
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
-const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated }) => {
+const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPhoneNumberEntered }) => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -60,7 +72,8 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated }) => 
 
       if (res.ok && data.sessionId) {
         setMessage('✅ Call initiated successfully!');
-        onSessionCreated(data.sessionId); // ✅ Pass session ID to parent
+        onPhoneNumberEntered(trimmedPhone);  // Pass phone number to parent
+        onSessionCreated(data.sessionId);     // Pass session ID to parent
       } else {
         setMessage(data.error || '❌ Failed to start call. Check the number or connection.');
       }
@@ -87,10 +100,10 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated }) => 
           width: '100%',
           padding: '8px',
           marginTop: '4px',
-          border: '1px solid black', // border black line
+          border: '1px solid black',
           borderRadius: '4px',
-          backgroundColor: 'white', // white box
-}}
+          backgroundColor: 'white',
+        }}
       />
       <small id="phoneHelp" style={{ display: 'block', marginBottom: '8px', color: 'black' }}>
         Enter phone number in international format (e.g. +353861790710)

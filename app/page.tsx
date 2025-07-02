@@ -4,6 +4,15 @@
 // uses Tailwind CSS for styling
 // uses React hooks for state management
 
+// TESTING IN PROGRESS
+// DELETE THE FOLLOWING LINE WHEN DONE
+// {sessionId && <CallInterface sessionId={sessionId} phoneNumber={phoneNumber} />}
+
+// TEMPORARY / TESTING PAGE
+// This page is for testing the call interface and phone input flow.
+// It should be removed once the production-ready call flow is completed.
+
+
 'use client';
 
 import CallInterface from './components/CallInterface';
@@ -13,7 +22,9 @@ import { useState } from 'react';
 import Image from 'next/image';
 
 export default function Home() {
+  // Store sessionId and phoneNumber in state
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
 
   return (
     <>
@@ -38,9 +49,17 @@ export default function Home() {
 
           <h1 className="text-3xl font-bold mb-6"> 🤖 AI Sales Call Assistant</h1>
 
-          {!sessionId && <PhoneInputForm onSessionCreated={setSessionId} />}
+          {/* Show phone input form if no session yet */}
+          {!sessionId && (
+            <PhoneInputForm
+              onSessionCreated={setSessionId}
+              onPhoneNumberEntered={setPhoneNumber} // pass phone number setter
+            />
+          )}
 
+          {/* Show call status and call interface if session exists */}
           {sessionId && <CallStatus sessionId={sessionId} />}
+          {sessionId && <CallInterface sessionId={sessionId} phoneNumber={phoneNumber} />}
         </div>
 
         {/* Footer stays at bottom */}
