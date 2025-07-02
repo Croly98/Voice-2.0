@@ -3,10 +3,10 @@
 
 // Connecting to backend websocket (currently localhost)
 // listens for messages from the server (audio buffers that the AI responds with)
-// Playing Audio- by calling playAudioBuffer() from your useAudioPlayer hook
+// Playing Audio - by calling playAudioBuffer() from your useAudioPlayer hook
 
 // useRef - Stores the WebSocket instance between re-renders.
-// UseEffect - Connects to WebSocket server when sessionId is set.
+// useEffect - Connects to WebSocket server when sessionId is set.
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -27,36 +27,46 @@ const useWebSocket = (sessionId: string | null) => {
   useEffect(() => {
     if (!sessionId) return;
 
-    // change link once deployed / finished testing
-    const socket = new WebSocket(`ws://localhost:3001?sessionId=${sessionId}`);
+    // change link once deployed / finished testing (3000 or 3001)
+    const socket = new WebSocket(`ws://localhost:3000?sessionId=${sessionId}`);
     socketRef.current = socket;
 
     socket.binaryType = 'arraybuffer';
 
-    // When audio buffer comes in, play it
     // socket.onmessage - Handles incoming audio buffers and plays them using playAudioBuffer
     socket.onmessage = (event) => {
       if (event.data instanceof ArrayBuffer) {
-        setAudioData(event.data);  // NEW: Save audio buffer to state
+        setAudioData(event.data);  // Save audio buffer to state
         playAudioBuffer(event.data);
       } else {
         console.log('Received non-audio message:', event.data);
       }
     };
 
+    // error handling (updated with AI since next.js did not like original)
     socket.onerror = (event) => {
-  console.error('WebSocket error event:', event);
-  // Sometimes event.target contains the WebSocket with readyState etc.
-  if (event && event.target) {
-    console.error('WebSocket readyState:', (event.target as WebSocket).readyState);
-  }
-};
+      console.error('WebSocket error event:', event);
 
-    // Handles connection issues or closed socket.
-    socket.onclose = () => {
-      console.log('WebSocket closed');
+      const target = event?.target as WebSocket | undefined;
+      if (target) {
+        const stateMap = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+        console.error('WebSocket readyState:', stateMap[target.readyState] || target.readyState);
+        console.error('WebSocket URL:', target.url);
+      } else {
+        console.warn('WebSocket error: unable to identify target socket');
+      }
     };
 
+    // Handles connection issues or closed socket.
+    socket.onclose = (event) => {
+      console.log('WebSocket closed', {
+        code: event.code,
+        reason: event.reason || 'No reason provided',
+        wasClean: event.wasClean,
+      });
+    };
+
+    // Clean up the socket connection when component unmounts or sessionId changes
     return () => {
       socket.close();
     };
@@ -69,6 +79,8 @@ const useWebSocket = (sessionId: string | null) => {
   const sendAudio = (audioData: ArrayBuffer) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(audioData);
+    } else {
+      console.warn('WebSocket not open. Unable to send audio.');
     }
   };
 
