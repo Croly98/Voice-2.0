@@ -1,3 +1,11 @@
+'use client';
+
+import { useState } from 'react';
+import CallInterface from './components/CallInterface';
+import PhoneInputForm from './components/PhoneInputForm';
+import CallStatus from './components/CallStatus';
+import Image from 'next/image';
+
 // displays a form for initiating a call (PhoneInputForm)
 // shows the current call status (CallStatus) once a session is created
 // contains a centered layout with a logo and footer
@@ -12,16 +20,8 @@
 // This page is for testing the call interface and phone input flow.
 // It should be removed once the production-ready call flow is completed.
 
-
-'use client';
-
-import CallInterface from './components/CallInterface';
-import PhoneInputForm from './components/PhoneInputForm';
-import CallStatus from './components/CallStatus';
-import { useState } from 'react';
-import Image from 'next/image';
-
 export default function Home() {
+  // Main production-ready call UI:
   // Store sessionId and phoneNumber in state
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string>('');

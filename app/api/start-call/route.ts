@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   }
 }
 
-// Utility function to create a simple random session ID
+// Utility function to create a random session ID
 function generateSessionId() {
   return Math.random().toString(36).substring(2, 10);
 }
