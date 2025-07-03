@@ -29,7 +29,7 @@ export default function AudioStream({ sessionId }: { sessionId: string }) {
   // connect to websocket @ws, include sessionId as a query parameter, so the server knows which session/room this user belongs to
   useEffect(() => {
     const connectWebSocket = () => {
-      const ws = new WebSocket(`ws://localhost:3000/api/ws?sessionId=${sessionId}`); //will have to change to server when deployed
+      const ws = new WebSocket(`ws://localhost:3001/api/ws?sessionId=${sessionId}`); //will have to change to server when deployed
       wsRef.current = ws; // stores the WebSocket instance in the ref, so it can be accessed later
 
       // log when connection opens

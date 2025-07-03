@@ -29,7 +29,7 @@ const CallStatus: React.FC<CallStatusProps> = ({ phoneNumber, liveStatusUpdate, 
     if (!phoneNumber || simulate) return;
 
     const sessionId = phoneNumber; // You can customize how sessionId is derived
-    const socket = new WebSocket(`ws://localhost:3000?sessionId=${sessionId}`);
+    const socket = new WebSocket(`ws://localhost:3001?sessionId=${sessionId}`);
 
     socket.onmessage = async (event) => {
       if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {

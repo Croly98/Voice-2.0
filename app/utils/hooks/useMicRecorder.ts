@@ -1,8 +1,7 @@
 // hooks/useMicRecorder.ts
 // made with AI for testing
 
-// when I got to http://localhost:3000/voice-test "Client Connected" is shown
-
+// when I got to http://localhost:3000(or3001)/voice-test "Client Connected" is shown
 
 import { useState, useRef } from 'react';
 
@@ -12,6 +11,16 @@ const useMicRecorder = (sendAudio: (data: ArrayBuffer) => void) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const startRecording = async () => {
+    // Guard to check if we're in a browser and mediaDevices API is available
+    if (
+      typeof window === 'undefined' ||
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+      console.error('MediaDevices API not available');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 

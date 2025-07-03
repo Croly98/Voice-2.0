@@ -8,7 +8,7 @@
 // useRef - Stores the WebSocket instance between re-renders.
 // useEffect - Connects to WebSocket server when sessionId is set.
 
-// Intergrated microphone streaming:
+// Integrated microphone streaming:
 // starts mic recording on socket connection
 // streams audio to backend (every 250ms)
 // Plays audio from backend as before
@@ -32,12 +32,16 @@ const useWebSocket = (sessionId: string | null) => {
 
   // Store mic recorder so we can stop it when needed
   const recorderRef = useRef<MediaRecorder | null>(null);
+  // Store mic MediaStream to properly stop tracks when cleaning up
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
 
     // change link once deployed / finished testing (3000 or 3001)
-    const socket = new WebSocket(`ws://localhost:3001?sessionId=${sessionId}`);
+    // const socket = new WebSocket(`ws://localhost:3001?sessionId=${sessionId}`); TESTING OUTSIDE VIRTUAL
+    const socket = new WebSocket(`ws://zp-unn01.ad.zeuspackaging.com:3001?sessionId=${sessionId}`);
+
     socketRef.current = socket;
     socket.binaryType = 'arraybuffer';
 
@@ -74,17 +78,29 @@ const useWebSocket = (sessionId: string | null) => {
       });
 
       // Stop recording when socket closes
-      recorderRef.current?.stop?.();
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        recorderRef.current.stop();
+      }
+      // Stop all tracks in the media stream to release mic
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
       recorderRef.current = null;
     };
 
     // When socket opens, start microphone streaming
     socket.onopen = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
-    //connects to webcam / mic audio
+        // *** FIX: Check if getUserMedia exists before calling ***
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('getUserMedia is not supported in this browser.');
+        }
 
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+
+        // connects to webcam / mic audio
         const recorder = new MediaRecorder(stream, {
           mimeType: 'audio/webm'
         });
@@ -111,10 +127,17 @@ const useWebSocket = (sessionId: string | null) => {
     // Clean up socket and mic recorder when unmounted or sessionId changes
     return () => {
       socket.close();
-      recorderRef.current?.stop?.();
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        recorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
       recorderRef.current = null;
+      socketRef.current = null;
     };
-  }, [sessionId]);
+  }, [sessionId, playAudioBuffer]);
 
   /**
    * Sends a chunk of audio (recorded from mic) to the backend.

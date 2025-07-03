@@ -38,7 +38,7 @@ export function setupWebSocketServer(server: Server) {
 
   // when client connects, it will be assigned a sessionId using the URL query parameter (/ws)
   wss.on('connection', (ws, req) => {
-    const url = new URL(req.url || '', 'http://localhost:3000'); //might have to update to exact host or just localhost on its own
+    const url = new URL(req.url || '', 'http://localhost:3001'); //might have to update to exact host or just localhost on its own
     const sessionId = url.searchParams.get('sessionId');
 
     // Validate sessionId. error if not provided
