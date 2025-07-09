@@ -1,5 +1,6 @@
 // ws/voice-ws-server.js
 // for testing
+// made with AI
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');

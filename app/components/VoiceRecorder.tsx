@@ -1,3 +1,9 @@
+// AI made this
+// Used for testing
+// React component gives a simple UI to start and stop voice recording
+// then send that audio to a WebSocket server in real-time
+
+
 'use client';
 import React from 'react';
 import useMicRecorder from '../utils/hooks/useMicRecorder';
