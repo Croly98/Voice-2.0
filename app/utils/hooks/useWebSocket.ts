@@ -1,158 +1,112 @@
-// defines a custom React hook that manages a WebSocket connection. 
-// It's responsible for the following:
-
-// Connecting to backend websocket (currently localhost)
-// listens for messages from the server (audio buffers that the AI responds with)
-// Playing Audio - by calling playAudioBuffer() from your useAudioPlayer hook
-
-// useRef - Stores the WebSocket instance between re-renders.
-// useEffect - Connects to WebSocket server when sessionId is set.
-
-// Integrated microphone streaming:
-// starts mic recording on socket connection
-// streams audio to backend (every 250ms)
-// Plays audio from backend as before
-
+// useWebSocket.ts
+// Custom React hook to handle WebSocket connection and audio streaming
+// Manages:
+// 1. Connection to WebSocket backend (e.g. ws://localhost:3001)
+// 2. Sending/receiving audio buffers
+// 3. Playing audio via useAudioPlayer hook
 
 import { useEffect, useRef, useState } from 'react';
-
-// useAudioPlayer - Custom hook that plays audio buffers
 import useAudioPlayer from './useAudioPlayer';
 
-/**
- * Hook that manages the WebSocket connection to receive audio from the server
- * and play it using the audio player.
- */
 const useWebSocket = (sessionId: string | null) => {
   const { playAudioBuffer } = useAudioPlayer();
-  const socketRef = useRef<WebSocket | null>(null);
 
-  // Store latest audio buffer received in state so it can be returned
-  const [audioData, setAudioData] = useState<ArrayBuffer | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);       // Store persistent socket reference
+  const recorderRef = useRef<MediaRecorder | null>(null); // Native browser audio recorder
+  const streamRef = useRef<MediaStream | null>(null);     // Audio stream from mic
 
-  // Store mic recorder so we can stop it when needed
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  // Store mic MediaStream to properly stop tracks when cleaning up
-  const streamRef = useRef<MediaStream | null>(null);
+  const [audioData, setAudioData] = useState<ArrayBuffer | null>(null); // For UI display/debug
 
+  // Connect to WebSocket when session ID changes
   useEffect(() => {
     if (!sessionId) return;
 
-    // change link once deployed / finished testing (3000 or 3001)
-    // const socket = new WebSocket(`ws://localhost:3001?sessionId=${sessionId}`); TESTING OUTSIDE VIRTUAL
-    const socket = new WebSocket(`ws://zp-unn01.ad.zeuspackaging.com:3001?sessionId=${sessionId}`);
-
+    const socket = new WebSocket(`ws://localhost:3001?sessionId=${sessionId}`);
     socketRef.current = socket;
-    socket.binaryType = 'arraybuffer';
+    socket.binaryType = 'arraybuffer'; // Expect binary audio data
 
-    // socket.onmessage - Handles incoming audio buffers and plays them using playAudioBuffer
+    // Handle incoming messages (audio)
     socket.onmessage = (event) => {
       if (event.data instanceof ArrayBuffer) {
-        setAudioData(event.data);  // Save audio buffer to state
-        playAudioBuffer(event.data);
+        setAudioData(event.data);        // Save for debugging/UI
+        playAudioBuffer(event.data);     // Play received audio
       } else {
-        console.log('Received non-audio message:', event.data);
+        console.log('⚠️ Received non-audio message:', event.data);
       }
     };
 
-    // error handling (updated with AI since next.js did not like original)
     socket.onerror = (event) => {
-      console.error('WebSocket error event:', event);
-
-      const target = event?.target as WebSocket | undefined;
-      if (target) {
-        const stateMap = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
-        console.error('WebSocket readyState:', stateMap[target.readyState] || target.readyState);
-        console.error('WebSocket URL:', target.url);
-      } else {
-        console.warn('WebSocket error: unable to identify target socket');
-      }
+      console.error('WebSocket error:', event);
     };
 
-    // Handles connection issues or closed socket.
-    socket.onclose = (event) => {
-      console.log('WebSocket closed', {
-        code: event.code,
-        reason: event.reason || 'No reason provided',
-        wasClean: event.wasClean,
-      });
-
-      // Stop recording when socket closes
-      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-        recorderRef.current.stop();
-      }
-      // Stop all tracks in the media stream to release mic
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
-      recorderRef.current = null;
+    socket.onclose = () => {
+      console.log('❌ WebSocket closed');
+      // stopRecording(); // Optional: leave commented out if you want manual control
     };
 
-    // When socket opens, start microphone streaming
-    socket.onopen = async () => {
-      try {
-        // *** FIX: Check if getUserMedia exists before calling ***
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('getUserMedia is not supported in this browser.');
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
-
-        // connects to webcam / mic audio
-        const recorder = new MediaRecorder(stream, {
-          mimeType: 'audio/webm'
-        });
-
-        recorder.ondataavailable = (event) => {
-          if (
-            event.data.size > 0 &&
-            socketRef.current &&
-            socketRef.current.readyState === WebSocket.OPEN
-          ) {
-            socketRef.current.send(event.data);
-          }
-        };
-
-        recorder.start(250); // send every 250ms
-        recorderRef.current = recorder;
-        console.log('Microphone recording started');
-      } catch (err) {
-        console.error('Failed to access microphone:', err);
-      }
-    };
-
-    // Closing
-    // Clean up socket and mic recorder when unmounted or sessionId changes
+    // Cleanup when component unmounts or sessionId changes
     return () => {
       socket.close();
-      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-        recorderRef.current.stop();
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
-      recorderRef.current = null;
+      stopRecording(); // Safely shut down mic and recording
       socketRef.current = null;
     };
   }, [sessionId, playAudioBuffer]);
 
-  /**
-   * Sends a chunk of audio (recorded from mic) to the backend.
-   * Can be triggered later when you hook up the mic.
-   */
-  const sendAudio = (audioData: ArrayBuffer) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(audioData);
-    } else {
-      console.warn('WebSocket not open. Unable to send audio.');
+  // Start capturing and sending audio using MediaRecorder
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('getUserMedia not supported');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+      // Every 250ms, send a chunk of audio to server
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && socketRef.current?.readyState === WebSocket.OPEN) {
+          socketRef.current.send(event.data);
+        }
+      };
+
+      recorder.start(250);
+      recorderRef.current = recorder;
+      console.log('🎙️ Recording started');
+    } catch (err) {
+      console.error('❌ Failed to start mic:', err);
     }
   };
 
-  // Return the latest audio data received, and the sendAudio function
-  return { audioData, sendAudio };
+  // Stop recording and release resources
+  const stopRecording = () => {
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      recorderRef.current.stop();
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    recorderRef.current = null;
+    console.log('🛑 Recording stopped');
+  };
+
+  // Send raw audio data (e.g., from useMicRecorder)
+  const sendAudio = (audioData: ArrayBuffer) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(audioData);
+    }
+  };
+
+  return {
+    audioData,
+    sendAudio,
+    startRecording,
+    stopRecording,
+  };
 };
 
 export default useWebSocket;
