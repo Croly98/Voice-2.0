@@ -1,0 +1,16 @@
+# This is to try and run TWO ngrok.yml files
+
+# ngrok start --all --config=C:\josh\Voice-2.0\app\ngrok.yml
+
+version: 2
+
+tunnels:
+  twiml-server:
+    addr: 3000
+    proto: http
+
+  websocket-server:
+    addr: 8080
+    proto: http
+
+

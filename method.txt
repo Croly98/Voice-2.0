@@ -1,0 +1,8 @@
+ 
+ * sale rep inputs phone number
+ * AI- introduction 
+ * customer input (speaking)
+ * translate customer input to prompt (text) (speach-to-text)
+ * send prompt to GPT-4o API
+ * receive AI-generated response
+ * translate AI response to audio (text-to-speech)
