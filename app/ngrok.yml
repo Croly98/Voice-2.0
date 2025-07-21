@@ -2,6 +2,8 @@
 
 # ngrok start --all --config=C:\josh\Voice-2.0\app\ngrok.yml
 
+authtoken: 2zaQjY2eIXZvbkdA9Xou2V93sJY_3fYYdMi85sYatqV2SDKjw
+
 version: 2
 
 tunnels:
