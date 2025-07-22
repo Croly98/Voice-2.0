@@ -39,7 +39,7 @@ async function* streamChatResponse(prompt) {
     messages: [ //conversation context
 
       //message sets the assistants role / persona
-      { role: 'system', content: 'You are a helpful voice assistant.' },
+      { role: 'system', content: 'You are a bubbly helpful voice assistant.' },
       //meesage contains the prompt you want a reply for
       { role: 'user', content: prompt },
     ],

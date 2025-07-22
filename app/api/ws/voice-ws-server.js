@@ -217,22 +217,19 @@ wss.on('connection', (ws, req) => {
       // Server relays these messages to other clients in the same session.
 
 
-ws.on('message', async (message) => {
-  try {
-    // Twilio sends stringified JSON, but *some messages may not be*
-    if (typeof message !== 'string' && !(message instanceof String)) {
-      console.warn('⚠️ Non-JSON message received');
-      return;
-    }
-
-    let parsed;
+// Handle incoming WebSocket messages from client
+  ws.on('message', async (message, isBinary) => {
     try {
-      parsed = JSON.parse(message);
-    } catch (err) {
-      console.error('❌ Failed to parse JSON message:', err.message);
-      console.log('Raw message:', message.toString());
-      return;
-    }
+      if (isBinary) {
+        // 🔊 This is raw audio data from Twilio (μ-law)
+        if (recognizeStream) {
+          recognizeStream.write(message); // send audio to Google STT
+        }
+        return; // don't try to parse binary as JSON
+      }
+
+    // This is a JSON message (event or signaling)
+      const parsed = JSON.parse(message.toString());
 
     // WEBRTC SIGNALING
 
@@ -248,6 +245,7 @@ ws.on('message', async (message) => {
         sessions.get(sessionId).push(ws);
         clients.set(ws, { sessionId });
         console.log(`🔗 Client joined session: ${sessionId}`);
+
       } else if (['offer', 'answer', 'ice-candidate'].includes(parsed.type)) {
         if (!sessionId) {
           return console.warn('Client has not joined a session yet');
@@ -261,105 +259,57 @@ ws.on('message', async (message) => {
 
       // TWILIO AUDIO STREAM & GOOGLE STT
 
-      } else if (parsed.event === 'start') {
-        // New Twilio stream started
-        streamSid = parsed.streamSid || 'unknown';
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        sessionDir = path.join(baseDir, `${timestamp}_${streamSid}`);
-        fs.mkdirSync(sessionDir);
-        console.log(`📁 Started stream: ${streamSid}`);
-        console.log(`📂 Created session folder: ${sessionDir}`);
+      } else if (parsed.event === 'startStream') {
+        // Twilio starts sending audio stream, with StreamSid info
+        streamSid = parsed.streamSid || `session_${Date.now()}`;
+        sessionDir = path.join(baseDir, streamSid);
+        if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir);
+
+        chunkCounter = 0;
+        conversationHistory = [{ role: 'system', content: 'You are a helpful assistant.' }];
+
+        console.log(`▶️ Starting stream for ${streamSid}`);
 
         // Start Google STT stream
         startRecognitionStream();
 
-      } else if (parsed.event === 'media') {
-        // Incoming audio chunk from Twilio (μ-law base64)
-        if (!recognizeStream) {
-          console.warn('Recognition stream not initialized yet');
-          return;
-        }
-
-        const payload = parsed.media.payload;
-        const audioBuffer = Buffer.from(payload, 'base64');
-
-        // Save μ-law chunk to file for record-keeping
-        const chunkFilename = path.join(sessionDir, `chunk_${chunkCounter++}.ulaw`);
-        fs.writeFile(chunkFilename, audioBuffer, (err) => {
-          if (err) console.error('Error saving chunk:', err);
-        });
-
-              } else if (parsed.event === 'media') {
-        // Incoming audio chunk from Twilio (μ-law base64)
-        if (!recognizeStream || recognizeStream.destroyed) {
-          console.warn('⚠️ Recognition stream is not available or already closed.');
-          return;
-        }
-
-        const payload = parsed.media.payload;
-        const audioBuffer = Buffer.from(payload, 'base64');
-
-        // Save μ-law chunk to file for record-keeping
-        const chunkFilename = path.join(sessionDir, `chunk_${chunkCounter++}.ulaw`);
-        fs.writeFile(chunkFilename, audioBuffer, (err) => {
-          if (err) console.error('Error saving chunk:', err);
-        });
-
-        // Pipe audio data to Google Speech-to-Text streaming recognize
-                // 🧠 Feed incoming audio buffer to Google STT
-        try {
-          recognizeStream.write(audioBuffer); // Live transcription
-        } catch (err) {
-          console.error('❌ Error writing to recognizeStream:', err);
-        }
-
-      } else if (parsed.event === 'stop') {
-        // 📴 Twilio sent a 'stop' event (call ended or stream closed)
-        console.log(`📴 Stream stopped: ${streamSid}`);
-
-        // Gracefully close the STT stream
+        } else if (parsed.event === 'stopStream') {
+        console.log(`⏹️ Stopping stream for ${streamSid}`);
         if (recognizeStream) {
           recognizeStream.end();
           recognizeStream = null;
         }
-
-        // 🧹 Clean up session-specific data
+        sessionId = null;
         streamSid = null;
-        sessionDir = null;
-        chunkCounter = 0;
-        conversationHistory = [];
-      } else {
-        // 📦 Handle unknown/unexpected message types
-        console.log('Received unknown message:', parsed);
+
+
+         } else {
+        console.log('❓ Unknown message received:', parsed);
       }
     } catch (err) {
-      // 🔥 Catch and log any unexpected parsing or logic errors
       console.error('❌ Error handling message:', err);
     }
   });
 
-  // 🔌 Client disconnected from WebSocket
-  ws.on('close', () => {
-    console.log('📴 Client disconnected');
+        ws.on('close', () => {
+    console.log('🔌 Client disconnected');
 
-    // Remove them from any session they were in
+    // Remove client from session map
     if (sessionId && sessions.has(sessionId)) {
-      const arr = sessions.get(sessionId).filter((client) => client !== ws);
-      sessions.set(sessionId, arr);
+      const clientList = sessions.get(sessionId);
+      sessions.set(sessionId, clientList.filter((c) => c !== ws));
+      clients.delete(ws);
     }
 
-    // Remove from client registry
-    clients.delete(ws);
-  });
-
-  // ⚠️ Log any WebSocket connection-level errors
-  ws.on('error', (err) => {
-    console.error('WebSocket error:', err);
+    if (recognizeStream) {
+      recognizeStream.end();
+      recognizeStream = null;
+    }
   });
 });
 
-// 🚀 Start HTTP + WebSocket server on port 8080 (or overridden via ENV)
+// Start HTTP server (can be replaced with your own express app)
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`🌐 Server listening on port ${PORT}`);
+  console.log(`🚀 Server listening on http://localhost:${PORT}`);
 });
