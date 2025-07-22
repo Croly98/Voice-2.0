@@ -33,12 +33,15 @@ const port = 3000;
 // Say: The Twilio voice will say "Connecting you now..."
 // Pause for 60 seconds (keeps the call open while the stream is active)
 
+// have to update wss server to match 8080 NGROK
 app.post('/voice', (req, res) => {
+  console.log("📞 Twilio webhook hit!"); // to test
+
   res.set('Content-Type', 'text/xml');
   res.send(`
     <Response>
       <Start>
-        <Stream url="wss:///bf1ca7085ac6.ngrok-free.app" />
+        <Stream url="wss://5de8922b7720.ngrok-free.app/media" />
       </Start>
       <Say>Connecting you now...</Say>
       <Pause length="60" />

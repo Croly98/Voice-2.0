@@ -11,6 +11,7 @@ tunnels:
     addr: 3000
     proto: http
 
+# this server needs to be configured in twilio (webhook)
   websocket-server:
     addr: 8080
     proto: http
