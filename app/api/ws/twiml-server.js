@@ -35,7 +35,7 @@ const port = 3000;
 
 // have to update wss server to match 8080 NGROK
 app.post('/voice', (req, res) => {
-  console.log("📞 Twilio webhook hit!"); // to test
+  console.log("📞 Twilio webhook hit!"); // tests when webhooks hit
 
   res.set('Content-Type', 'text/xml');
   res.send(`

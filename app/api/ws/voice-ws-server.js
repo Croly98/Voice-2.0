@@ -45,7 +45,23 @@ const { synthesizeSpeechBuffer } = require('../../utils/tts');
 
 // Create HTTP server and WebSocket server instance
 const server = http.createServer();
-const wss = new WebSocket.Server({ server });
+
+// This makes sure only WebSocket connections at /media are accepted – exactly what Twilio expects.
+
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on('upgrade', (request, socket, head) => {
+  const { url } = request;
+
+  if (url === '/media') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
 
 console.log('✅ WebSocket server initialized...');
 
@@ -194,18 +210,37 @@ wss.on('connection', (ws, req) => {
   }
 
   // Handle incoming WebSocket messages from client
-  ws.on('message', async (message) => {
-    try {
-      const parsed = JSON.parse(message);
+// WEBRTC SIGNALING
 
-      // WEBRTC SIGNALING
+      // Clients join a sessionId (a room).
+      // Then send offers/answers/ICE candidates.
+      // Server relays these messages to other clients in the same session.
+
+
+ws.on('message', async (message) => {
+  try {
+    // Twilio sends stringified JSON, but *some messages may not be*
+    if (typeof message !== 'string' && !(message instanceof String)) {
+      console.warn('⚠️ Non-JSON message received');
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(message);
+    } catch (err) {
+      console.error('❌ Failed to parse JSON message:', err.message);
+      console.log('Raw message:', message.toString());
+      return;
+    }
+
+    // WEBRTC SIGNALING
 
       // Clients join a sessionId (a room).
       // Then send offers/answers/ICE candidates.
       // Server relays these messages to other clients in the same session.
 
       if (parsed.type === 'join') {
-        // Client joins a signaling session (room)
         sessionId = parsed.sessionId || 'default-room';
         if (!sessions.has(sessionId)) {
           sessions.set(sessionId, []);
@@ -213,13 +248,10 @@ wss.on('connection', (ws, req) => {
         sessions.get(sessionId).push(ws);
         clients.set(ws, { sessionId });
         console.log(`🔗 Client joined session: ${sessionId}`);
-
       } else if (['offer', 'answer', 'ice-candidate'].includes(parsed.type)) {
-        // Broadcast WebRTC signaling messages to other clients in the same session
         if (!sessionId) {
           return console.warn('Client has not joined a session yet');
         }
-
         const otherClients = sessions.get(sessionId) || [];
         for (const client of otherClients) {
           if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -257,50 +289,76 @@ wss.on('connection', (ws, req) => {
           if (err) console.error('Error saving chunk:', err);
         });
 
+              } else if (parsed.event === 'media') {
+        // Incoming audio chunk from Twilio (μ-law base64)
+        if (!recognizeStream || recognizeStream.destroyed) {
+          console.warn('⚠️ Recognition stream is not available or already closed.');
+          return;
+        }
+
+        const payload = parsed.media.payload;
+        const audioBuffer = Buffer.from(payload, 'base64');
+
+        // Save μ-law chunk to file for record-keeping
+        const chunkFilename = path.join(sessionDir, `chunk_${chunkCounter++}.ulaw`);
+        fs.writeFile(chunkFilename, audioBuffer, (err) => {
+          if (err) console.error('Error saving chunk:', err);
+        });
+
         // Pipe audio data to Google Speech-to-Text streaming recognize
-        recognizeStream.write(audioBuffer);
+                // 🧠 Feed incoming audio buffer to Google STT
+        try {
+          recognizeStream.write(audioBuffer); // Live transcription
+        } catch (err) {
+          console.error('❌ Error writing to recognizeStream:', err);
+        }
 
       } else if (parsed.event === 'stop') {
-        // Twilio stream ended
+        // 📴 Twilio sent a 'stop' event (call ended or stream closed)
         console.log(`📴 Stream stopped: ${streamSid}`);
 
-        // End Google STT stream
+        // Gracefully close the STT stream
         if (recognizeStream) {
           recognizeStream.end();
           recognizeStream = null;
         }
 
-        // Clean up session data
+        // 🧹 Clean up session-specific data
         streamSid = null;
         sessionDir = null;
         chunkCounter = 0;
         conversationHistory = [];
-
       } else {
-        // Unknown or unhandled message
+        // 📦 Handle unknown/unexpected message types
         console.log('Received unknown message:', parsed);
       }
     } catch (err) {
+      // 🔥 Catch and log any unexpected parsing or logic errors
       console.error('❌ Error handling message:', err);
     }
   });
 
+  // 🔌 Client disconnected from WebSocket
   ws.on('close', () => {
     console.log('📴 Client disconnected');
-    // Remove from sessions
+
+    // Remove them from any session they were in
     if (sessionId && sessions.has(sessionId)) {
       const arr = sessions.get(sessionId).filter((client) => client !== ws);
       sessions.set(sessionId, arr);
     }
+
+    // Remove from client registry
     clients.delete(ws);
   });
 
+  // ⚠️ Log any WebSocket connection-level errors
   ws.on('error', (err) => {
     console.error('WebSocket error:', err);
   });
 });
 
-// Start HTTP + WS server on port 8080 (adjust as needed)
+// 🚀 Start HTTP + WebSocket server on port 8080 (or overridden via ENV)
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`🌐 Server listening on port ${PORT}`);
