@@ -74,6 +74,9 @@ async function synthesizeSpeechBuffer(text) {
   return response.audioContent; // Already a Buffer
 }
 
+//logging
+console.log('🧪 TTS PCM length:', replyPcmBuffer.length);
+
 module.exports = {
   pcmToMulaw,
   synthesizeSpeechBuffer,

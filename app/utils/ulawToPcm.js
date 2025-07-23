@@ -26,4 +26,8 @@ function ulawToPcm(ulawBuffer) {
   return pcmBuffer;
 }
 
+//logging
+
+console.log('🧪 μ-law Buffer length:', replyUlawBuffer.length);
+
 module.exports = { ulawToPcm };
