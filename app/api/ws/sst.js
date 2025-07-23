@@ -59,6 +59,17 @@ function savePcmAsWav(pcmBuffer) {
  * @param {Buffer} pcmBuffer - Raw PCM buffer (e.g. from ulaw → pcm conversion)
  * @returns {Promise<string>} Transcribed text
  */
+
+// FOR TRESTING, NOTE THIS OUT LATER!
+async function transcribeAudio(buffer) {
+  console.log('🔁 Dummy STT activated');
+  return "hello, this is a test "; // static string to test GPT and TTS flow
+}
+
+module.exports = { transcribeAudio };
+
+/*
+
 async function transcribeAudio(pcmBuffer) {
   try {
     // Step 1: Convert to temp WAV file

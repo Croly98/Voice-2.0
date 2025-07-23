@@ -9,7 +9,7 @@ const speech = require('@google-cloud/speech');
 // 🔐 Initialize Google Speech-to-Text client
 //     - Auth uses service key file or GOOGLE_APPLICATION_CREDENTIALS env var
 const client = new speech.SpeechClient({
-  keyFilename: './google-service-key.json', // 🔁 Update path if needed
+  keyFilename: '../../../google-service-key.json', // 
 });
 
 /**

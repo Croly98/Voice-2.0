@@ -2,7 +2,7 @@ const textToSpeech = require('@google-cloud/text-to-speech');
 
 // ✅ Initialize Google Cloud TTS client with explicit key file (if not using env var)
 const client = new textToSpeech.TextToSpeechClient({
-  keyFilename: './google-service-key.json', // 🔁 Update this path if your key is in a different folder
+  keyFilename: '../../../google-service-key.json', // 🔁 Update this path if your key is in a different folder
 });
 
 /**
@@ -71,11 +71,11 @@ async function synthesizeSpeechBuffer(text) {
     throw new Error('❌ No audio content received from Google TTS');
   }
 
+  // logging
+  console.log('🔊 TTS PCM length:', response.audioContent.length);
+
   return response.audioContent; // Already a Buffer
 }
-
-//logging
-console.log('🧪 TTS PCM length:', replyPcmBuffer.length);
 
 module.exports = {
   pcmToMulaw,

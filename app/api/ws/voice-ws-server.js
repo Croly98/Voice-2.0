@@ -36,9 +36,8 @@ const speech = require('@google-cloud/speech');
 const speechClient = new speech.SpeechClient();
 
 // OpenAI API client setup
-const { Configuration, OpenAIApi } = require('openai');
-const openaiConfig = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
-const openai = new OpenAIApi(openaiConfig);
+const { OpenAI } = require("openai");
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Import your custom TTS function that returns a raw LINEAR16 8kHz PCM buffer
 const { synthesizeSpeechBuffer } = require('../../utils/tts');
@@ -259,7 +258,7 @@ wss.on('connection', (ws, req) => {
 
       // TWILIO AUDIO STREAM & GOOGLE STT
 
-      } else if (parsed.event === 'startStream') {
+      } else if (parsed.event === 'start') {
         // Twilio starts sending audio stream, with StreamSid info
         streamSid = parsed.streamSid || `session_${Date.now()}`;
         sessionDir = path.join(baseDir, streamSid);
@@ -273,12 +272,18 @@ wss.on('connection', (ws, req) => {
         // Start Google STT stream
         startRecognitionStream();
 
-        } else if (parsed.event === 'stopStream') {
-        console.log(`⏹️ Stopping stream for ${streamSid}`);
-        if (recognizeStream) {
-          recognizeStream.end();
-          recognizeStream = null;
-        }
+       } else if (parsed.event === 'media') {
+  const payload = Buffer.from(parsed.media.payload, 'base64');
+  if (recognizeStream) {
+    recognizeStream.write(payload); // pipe to STT
+  }
+
+} else if (parsed.event === 'stop') {
+  console.log(`⏹️ Stopping stream for ${streamSid}`);
+  if (recognizeStream) {
+    recognizeStream.end();
+    recognizeStream = null;
+  }
         sessionId = null;
         streamSid = null;
 
