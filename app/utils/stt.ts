@@ -1,3 +1,5 @@
+// NO LONGER IN USE, WAS USED FOR TESTING
+
 // speech-to-text
 // converting custmer audio input into text to send to GPT-4o
 
@@ -12,7 +14,7 @@
 // Packages */
 
 // utils/stt.ts
-
+/*
 import fs from 'fs/promises';
 import speech from '@google-cloud/speech';
 
@@ -26,7 +28,7 @@ const client = new speech.SpeechClient();
  * Transcribes an MP3 audio buffer using Google Cloud Speech-to-Text.
  * @param audioBuffer The audio data as a Buffer (binary)
  * @returns Transcribed text or null if no transcription
- */
+ *//*
 export async function transcribeMP3(audioBuffer: Buffer): Promise<string | null> {
   // --- Step 2.2: Log incoming audio buffer size ---
   console.log(`🗣️ Transcribing audio buffer (${audioBuffer.length} bytes)`);

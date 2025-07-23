@@ -1,4 +1,5 @@
 /**
+ * WAS USED FOR TESTING, NO LONGER IN USE
  * twilio.ts
  * 
  * Contains functions to interact with Twilio API.
