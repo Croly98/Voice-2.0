@@ -167,7 +167,11 @@ wss.on('connection', (ws, req) => {
             conversationHistory.push({ role: 'user', content: transcript });
 
             // Get AI response from OpenAI API
-            const aiResponse = await getAIResponse(conversationHistory);
+            let aiResponse = '';
+
+            for await (const chunk of streamChatResponse(conversationHistory)) {
+            aiResponse += chunk;
+            }
             console.log('🤖 AI Response:', aiResponse);
 
             // Add AI response to chat history
@@ -207,18 +211,23 @@ wss.on('connection', (ws, req) => {
 
   // OpenAI chat completion helper function
   // Calls OpenAI Chat API (gpt-4o) using chat history as context
-  async function getAIResponse(history) {
-    try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o', // Adjust model if OpenAI updates
-        messages: history,
-      });
-      return response.data.choices[0].message.content.trim();
-    } catch (error) {
-      console.error('❌ OpenAI error:', error);
-      return 'Sorry, I had trouble understanding that.';
+  async function* streamChatResponse(history) {
+  try {
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      stream: true,
+      messages: history,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices?.[0]?.delta?.content;
+      if (content) yield content;
     }
+  } catch (error) {
+    console.error('❌ OpenAI stream error:', error);
+    yield 'Sorry, I had trouble understanding that.';
   }
+}
 
   // Handle incoming WebSocket messages from client
 // WEBRTC SIGNALING

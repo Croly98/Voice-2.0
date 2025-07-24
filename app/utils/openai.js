@@ -32,7 +32,7 @@ const openai = new OpenAI({
 async function* streamChatResponse(prompt) {
 
 // Sends a request to OpenAI’s chat completion API to generate a reply with streaming enabled  
-// CAN REMOVE THESE COMMENTS LATER
+// CAN REMOVE THESE COMMENTS LATER- PROMPT IS GOOD ENOUGH FOR 
   // Uses getAIResponse helper to stream OpenAI response in real time
 await getAIResponse(prompt, (chunk) => {
   // model: 'gpt-3.5-turbo', // or whatever is best (3.5 for now)
