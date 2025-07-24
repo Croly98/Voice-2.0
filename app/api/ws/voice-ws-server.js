@@ -33,11 +33,23 @@ const http = require('http');
 
 // Google Cloud Speech client setup
 const speech = require('@google-cloud/speech');
-const speechClient = new speech.SpeechClient();
+const speechClient = new speech.SpeechClient({
+  keyFilename: 'C:/josh/Voice-2.0/google-service-key.json',
+});
 
 // OpenAI API client setup
 const { OpenAI } = require("openai");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const { streamChatResponse } = require('../../utils/openai');
+
+async function getAIResponse(prompt, onData) {
+  for await (const chunk of streamChatResponse(prompt)) {
+    onData(chunk);
+  }
+}
+
+
 
 // Import your custom TTS function that returns a raw LINEAR16 8kHz PCM buffer
 const { synthesizeSpeechBuffer } = require('../../utils/tts');
@@ -197,7 +209,7 @@ wss.on('connection', (ws, req) => {
   // Calls OpenAI Chat API (gpt-4o) using chat history as context
   async function getAIResponse(history) {
     try {
-      const response = await openai.createChatCompletion({
+      const response = await openai.chat.completions.create({
         model: 'gpt-4o', // Adjust model if OpenAI updates
         messages: history,
       });
@@ -274,16 +286,21 @@ wss.on('connection', (ws, req) => {
 
        } else if (parsed.event === 'media') {
   const payload = Buffer.from(parsed.media.payload, 'base64');
-  if (recognizeStream) {
-    recognizeStream.write(payload); // pipe to STT
-  }
+  if (recognizeStream && !recognizeStream.destroyed) {
+  recognizeStream.write(payload);
+} else {
+  console.warn('⚠️ Tried to write to a destroyed or missing recognizeStream');
+}
+
 
 } else if (parsed.event === 'stop') {
   console.log(`⏹️ Stopping stream for ${streamSid}`);
-  if (recognizeStream) {
-    recognizeStream.end();
-    recognizeStream = null;
-  }
+  
+  if (recognizeStream && !recognizeStream.destroyed) {
+  recognizeStream.end();
+}
+recognizeStream = null;
+
         sessionId = null;
         streamSid = null;
 

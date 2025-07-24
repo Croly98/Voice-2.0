@@ -2,7 +2,7 @@ const textToSpeech = require('@google-cloud/text-to-speech');
 
 // ✅ Initialize Google Cloud TTS client with explicit key file (if not using env var)
 const client = new textToSpeech.TextToSpeechClient({
-  keyFilename: '../../../google-service-key.json', // 🔁 Update this path if your key is in a different folder
+  keyFilename: 'C:/josh/Voice-2.0/google-service-key.json', // 🔁 Update this path if your key is in a different folder
 });
 
 /**

@@ -32,18 +32,23 @@ const openai = new OpenAI({
 async function* streamChatResponse(prompt) {
 
 // Sends a request to OpenAI’s chat completion API to generate a reply with streaming enabled  
+// CAN REMOVE THESE COMMENTS LATER
+  // Uses getAIResponse helper to stream OpenAI response in real time
+await getAIResponse(prompt, (chunk) => {
+  // model: 'gpt-3.5-turbo', // or whatever is best (3.5 for now)
+  // stream: true, // tells OpenAI to send back response in stages
+  // messages: [ //conversation context
+  //   { role: 'system', content: 'You are a bubbly helpful voice assistant.' },
+  //   { role: 'user', content: prompt },
+  // ]
+  
+  // 🧠 chunk contains a piece of the assistant's reply
+  console.log('🧠 AI chunk:', chunk);
 
-  const stream = await openai.chat.completions.create({
-    model: 'gpt-4o', // or whatver is best
-    stream: true, // tells OpenAI to send back response in stages
-    messages: [ //conversation context
+  // You can now send each chunk to TTS or back to the caller if needed
+  // e.g. buffer it or stream to client
+});
 
-      //message sets the assistants role / persona
-      { role: 'system', content: 'You are a bubbly helpful voice assistant.' },
-      //meesage contains the prompt you want a reply for
-      { role: 'user', content: prompt },
-    ],
-  });
 
 // what this does:
 // Loops asynchronously over the streamed data from OpenAI.
