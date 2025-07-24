@@ -25,6 +25,11 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
+// Parse incoming request body
+
+app.use(express.urlencoded({ extended: false }));
+
+
 // POST Route for voice call + ngrok server
 // POST endpoint at /voice. Twilio will call this URL (e.g., http://your-server.com/voice) when a call is received
 
@@ -36,14 +41,14 @@ const port = 3000;
 // have to update wss server to match 8080 NGROK
 app.post('/voice', (req, res) => {
   console.log("📞 Twilio webhook hit!"); // tests when webhooks hit
-
+// MAKE SURE TO UPDATE TWIML BIN (on twilio) IF URL CHANGES!!!
   res.set('Content-Type', 'text/xml');
   res.send(`
     <Response>
       <Start>
         <Stream url="wss://5de8922b7720.ngrok-free.app/media" />
       </Start>
-      <Say>Connecting you now...</Say>
+      <Say>Connecting Josh...</Say>
       <Pause length="60" />
     </Response>
   `);

@@ -52,7 +52,7 @@ async function getAIResponse(prompt, onData) {
 
 
 // Import your custom TTS function that returns a raw LINEAR16 8kHz PCM buffer
-const { synthesizeSpeechBuffer } = require('../../utils/tts');
+const { synthesizeSpeechBuffer, pcmToMulaw } = require('../../utils/tts');
 
 // Create HTTP server and WebSocket server instance
 const server = http.createServer();
@@ -85,29 +85,7 @@ if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir);
 // Returns a buffer of 8-bit μ-law encoded audio, suitable for Twilio playback
 // This encoding compresses 16-bit audio samples into 8 bits with a non-linear companding algorithm
 
-// dont really understand what I have written here
-function linear16ToMuLaw(buffer) {
-  const MULAW_MAX = 0x1FFF;
-  const MULAW_BIAS = 33;
-  const muLawBuffer = Buffer.alloc(buffer.length / 2);
-
-  for (let i = 0; i < buffer.length; i += 2) {
-    const pcmVal = buffer.readInt16LE(i);
-    let sign = (pcmVal >> 8) & 0x80;
-    let val = sign ? -pcmVal : pcmVal;
-    val = val + MULAW_BIAS;
-    if (val > MULAW_MAX) val = MULAW_MAX;
-    let exponent = 7;
-    for (let expMask = 0x4000; (val & expMask) === 0 && exponent > 0; expMask >>= 1) {
-      exponent--;
-    }
-    let mantissa = (val >> (exponent + 3)) & 0x0F;
-    let muLawByte = ~(sign | (exponent << 4) | mantissa);
-    muLawBuffer[i / 2] = muLawByte;
-  }
-
-  return muLawBuffer;
-}
+// dont really understand what I have written here (LINEAR16TOMULAW WAS HERE!)
 
 // Data structures for WebRTC signaling
 
@@ -182,7 +160,7 @@ wss.on('connection', (ws, req) => {
               const pcmAudioBuffer = await synthesizeSpeechBuffer(aiResponse);
 
               // μ-law encode for Twilio playback
-              const mulawBuffer = linear16ToMuLaw(pcmAudioBuffer);
+              const mulawBuffer = pcmToMulaw(pcmAudioBuffer);
 
               // Send μ-law audio back in ~20ms chunks (320 bytes) as base64 over WebSocket
               const chunkSize = 320;
@@ -193,6 +171,7 @@ wss.on('connection', (ws, req) => {
                 ws.send(JSON.stringify({
                   event: 'media',
                   media: {
+                    track: 'outbound',
                     payload: base64Chunk,
                   },
                 }));
