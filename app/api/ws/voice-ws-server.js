@@ -13,57 +13,45 @@
 // New features:
 // - WebRTC signaling handling via JSON messages:
 //   - Clients send 'join' with a sessionId (room) to join
-//   - Clients send 'offer', 'answer', 'ice-candidate' messages for WebRTC negotiation
+//   - Clients send 'offer', 'answer', 'ice‑candidate' messages for WebRTC negotiation
 //   - Server broadcasts signaling messages to other clients in same session
 //
 // This allows WebRTC peers to establish direct connections with signaling proxied by this WebSocket server.
 //
 // Summary:
 // Real-time transcription + AI conversation from a Twilio call.
-// Text-to-speech replies sent back over WebSocket (as μ-law chunks).
+// Text-to-speech replies sent back over WebSocket (as μ‑law chunks).
 // Relays WebRTC signaling messages so clients can connect peer-to-peer.
 
+
+// IMPORTS
 require('dotenv').config();
 
-// websocket and HTTP server + filesystem + path utils for audio chunks
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 
-// Google Cloud Speech client setup
 const speech = require('@google-cloud/speech');
 const speechClient = new speech.SpeechClient({
   keyFilename: 'C:/josh/Voice-2.0/google-service-key.json',
 });
 
-// OpenAI API client setup
 const { OpenAI } = require("openai");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const { streamChatResponse } = require('../../utils/openai');
 
-async function getAIResponse(prompt, onData) {
-  for await (const chunk of streamChatResponse(prompt)) {
-    onData(chunk);
-  }
-}
-
-
-
-// Import your custom TTS function that returns a raw LINEAR16 8kHz PCM buffer
 const { synthesizeSpeechBuffer, pcmToMulaw } = require('../../utils/tts');
 
-// Create HTTP server and WebSocket server instance
-const server = http.createServer();
+// CREATES MY WEBSOCKET SERVER AND HTTP SERVER
 
-// This makes sure only WebSocket connections at /media are accepted – exactly what Twilio expects.
+const server = http.createServer();
 
 const wss = new WebSocket.Server({ noServer: true });
 
 server.on('upgrade', (request, socket, head) => {
   const { url } = request;
-
   if (url === '/media') {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
@@ -73,31 +61,22 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
+//CREATES FOLDERS FOR AUDIO LOGS AND HELPS WITH WEBSOCKET CLIENTS
+//CREATES ROOM
 
 console.log('✅ WebSocket server initialized...');
 
-// Directory to save audio chunks (μ-law encoded)
 const baseDir = path.join(__dirname, '..', '..', '..', 'recordings');
 if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir);
-
-// -----------------------------
-// Utility: μ-law encode raw LINEAR16 PCM buffer (16-bit little-endian)
-// Returns a buffer of 8-bit μ-law encoded audio, suitable for Twilio playback
-// This encoding compresses 16-bit audio samples into 8 bits with a non-linear companding algorithm
-
-// dont really understand what I have written here (LINEAR16TOMULAW WAS HERE!)
-
-// Data structures for WebRTC signaling
 
 // Map WebSocket client to metadata (e.g. sessionId)
 const clients = new Map();
 
-// Sessions map session IDs (like room names) to all clients in that session
+// Map sessionId to array of clients in that session
 const sessions = new Map();
 
+//WHEN TWILIO OR CLIENTS CONNECT TO /MEDIA, NOTIFIED
 
-// WebSocket connection handler
-// Handles both Twilio audio sessions and WebRTC signaling messages
 wss.on('connection', (ws, req) => {
   console.log('📞 Client connected');
 
@@ -108,7 +87,8 @@ wss.on('connection', (ws, req) => {
   let sessionDir = null;
   let chunkCounter = 0;
   let recognizeStream = null;   // Google Speech streaming recognition
-  let conversationHistory = []; // Chat history for OpenAI context
+
+  // TELLS GOOGLE STT HOW TO INTERPRET TWILIOS INCOMING AUDIO (which is 8kHz μ-law) 
 
   // Google Speech-to-Text streaming config (expects μ-law 8kHz audio from Twilio)
   const speechRequest = {
@@ -132,6 +112,8 @@ wss.on('connection', (ws, req) => {
       .streamingRecognize(speechRequest)
       .on('error', (error) => {
         console.error('❌ Google STT Error:', error);
+         recognizeStream.end();
+         startRecognitionStream(); // restart stream
       })
       .on('data', async (data) => {
         if (data.results[0] && data.results[0].alternatives[0]) {
@@ -148,12 +130,13 @@ wss.on('connection', (ws, req) => {
             let aiResponse = '';
 
             for await (const chunk of streamChatResponse(conversationHistory)) {
-            aiResponse += chunk;
+              aiResponse += chunk;
             }
             console.log('🤖 AI Response:', aiResponse);
 
             // Add AI response to chat history
             conversationHistory.push({ role: 'assistant', content: aiResponse });
+
 
             // Generate TTS audio buffer (LINEAR16 8kHz PCM) from AI response
             try {
@@ -162,24 +145,14 @@ wss.on('connection', (ws, req) => {
               // μ-law encode for Twilio playback
               const mulawBuffer = pcmToMulaw(pcmAudioBuffer);
 
-              // Send μ-law audio back in ~20ms chunks (320 bytes) as base64 over WebSocket
-              const chunkSize = 320;
-              for (let i = 0; i < mulawBuffer.length; i += chunkSize) {
-                const chunk = mulawBuffer.slice(i, i + chunkSize);
-                const base64Chunk = chunk.toString('base64');
+              // Debug logs — do this ONCE per audio response
+              console.log('🔎 PCM preview:', pcmAudioBuffer.slice(0, 10));
+              console.log('🔎 PCM buffer length:', pcmAudioBuffer.length);
+              console.log('🔎 μ-law buffer length:', mulawBuffer.length);
 
-                ws.send(JSON.stringify({
-                  event: 'media',
-                  media: {
-                    track: 'outbound',
-                    payload: base64Chunk,
-                  },
-                }));
+              // Send audio back to Twilio
+              await sendAudioInChunks(ws, mulawBuffer);
 
-                // Delay to simulate real-time streaming pace
-                await new Promise((r) => setTimeout(r, 20));
-              }
-              console.log('🔊 TTS audio sent back to caller');
             } catch (err) {
               console.error('❌ Error generating/sending TTS audio:', err);
             }
@@ -188,35 +161,6 @@ wss.on('connection', (ws, req) => {
       });
   }
 
-  // OpenAI chat completion helper function
-  // Calls OpenAI Chat API (gpt-4o) using chat history as context
-  async function* streamChatResponse(history) {
-  try {
-    const stream = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      stream: true,
-      messages: history,
-    });
-
-    for await (const chunk of stream) {
-      const content = chunk.choices?.[0]?.delta?.content;
-      if (content) yield content;
-    }
-  } catch (error) {
-    console.error('❌ OpenAI stream error:', error);
-    yield 'Sorry, I had trouble understanding that.';
-  }
-}
-
-  // Handle incoming WebSocket messages from client
-// WEBRTC SIGNALING
-
-      // Clients join a sessionId (a room).
-      // Then send offers/answers/ICE candidates.
-      // Server relays these messages to other clients in the same session.
-
-
-// Handle incoming WebSocket messages from client
   ws.on('message', async (message, isBinary) => {
     try {
       if (isBinary) {
@@ -227,14 +171,10 @@ wss.on('connection', (ws, req) => {
         return; // don't try to parse binary as JSON
       }
 
-    // This is a JSON message (event or signaling)
+      // This is a JSON message (event or signaling)
       const parsed = JSON.parse(message.toString());
 
-    // WEBRTC SIGNALING
-
-      // Clients join a sessionId (a room).
-      // Then send offers/answers/ICE candidates.
-      // Server relays these messages to other clients in the same session.
+      // WEBRTC SIGNALING 
 
       if (parsed.type === 'join') {
         sessionId = parsed.sessionId || 'default-room';
@@ -258,6 +198,8 @@ wss.on('connection', (ws, req) => {
 
       // TWILIO AUDIO STREAM & GOOGLE STT
 
+      // STARTS SPEECH TO TEXT STREAM
+
       } else if (parsed.event === 'start') {
         // Twilio starts sending audio stream, with StreamSid info
         streamSid = parsed.streamSid || `session_${Date.now()}`;
@@ -272,28 +214,42 @@ wss.on('connection', (ws, req) => {
         // Start Google STT stream
         startRecognitionStream();
 
-       } else if (parsed.event === 'media') {
-  const payload = Buffer.from(parsed.media.payload, 'base64');
-  if (recognizeStream && !recognizeStream.destroyed) {
-  recognizeStream.write(payload);
-} else {
-  console.warn('⚠️ Tried to write to a destroyed or missing recognizeStream');
-}
+        //CONVERTS THE BASE64 U-LAW AUDIO TO A BUFFER
+        //FOR GOOGLE SPEECH TO TEXT TO STREAM
 
+        //THIS IS FOR INCOMING AUDIO
+        //WE RECEIVE AUDIO FROM TWILIO VIA WEBSOCKET MESSAGES
 
-} else if (parsed.event === 'stop') {
+      } else if (parsed.event === 'media') {
+        const payload = Buffer.from(parsed.media.payload, 'base64');
+        if (recognizeStream && !recognizeStream.destroyed) {
+          recognizeStream.write(payload); // FEEDS INTO GOOGLE STT
+        } else {
+          console.warn('⚠️ Tried to write to a destroyed or missing recognizeStream');
+        }
+
+      } else if (parsed.event === 'stop') {
   console.log(`⏹️ Stopping stream for ${streamSid}`);
-  
+
   if (recognizeStream && !recognizeStream.destroyed) {
-  recognizeStream.end();
-}
-recognizeStream = null;
+    recognizeStream.end();
+  }
+  recognizeStream = null;
 
-        sessionId = null;
-        streamSid = null;
+  // Remove this client from the sessions map if sessionId exists
+  if (sessionId && sessions.has(sessionId)) {
+    const clientList = sessions.get(sessionId);
+    sessions.set(sessionId, clientList.filter((client) => client !== ws));
+  }
 
+  // Remove client from clients map as well
+  clients.delete(ws);
 
-         } else {
+  // Reset sessionId and streamSid
+  sessionId = null;
+  streamSid = null;
+
+      } else {
         console.log('❓ Unknown message received:', parsed);
       }
     } catch (err) {
@@ -301,7 +257,7 @@ recognizeStream = null;
     }
   });
 
-        ws.on('close', () => {
+  ws.on('close', () => {
     console.log('🔌 Client disconnected');
 
     // Remove client from session map
@@ -317,6 +273,53 @@ recognizeStream = null;
     }
   });
 });
+
+// ADDED BY AI- Helper function: send μ-law audio back to Twilio in small chunks
+
+// OUTGOING AUDIO TO TWILIO
+// Takes μ-law encoded audio from Google TTS output
+// Sends each chunk as a raw binary buffer over the WebSocket
+// Twilio hears this audio and plays it back to the caller
+
+// SUMMARY: μ-law audio → Binary chunks → WebSocket → Twilio plays to caller
+
+async function sendAudioInChunks(ws, mulawBuffer) {
+  const chunkSize = 320; // 20ms @ 8kHz
+
+  for (let i = 0; i < mulawBuffer.length; i += chunkSize) {
+    let chunk = mulawBuffer.slice(i, i + chunkSize);
+
+    // 🧼 Pad final chunk with μ-law silence (0xFF)
+    if (chunk.length < chunkSize) {
+      const padding = Buffer.alloc(chunkSize - chunk.length, 0xFF);
+      chunk = Buffer.concat([chunk, padding]);
+      console.log(`🧩 Final chunk padded to ${chunk.length} bytes`);
+    }
+
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        event: 'media',
+        media: {
+          payload: chunk.toString('base64'),
+          track: 'outbound',
+        },
+      }));
+    }
+
+    // Simulate real-time 20ms spacing
+    await new Promise((r) => setTimeout(r, 20));
+  }
+
+  // 🕓 Give Twilio time to finish playing before connection closes
+  await new Promise((r) => setTimeout(r, 500));
+
+  console.log('✅ All μ-law chunks sent to Twilio');
+}
+
+
+// -- OpenAI chat completion helper function -- REMOVED AS ALREADY DEFINED
+// Calls OpenAI Chat API (gpt-3.5-turbo) using chat history as context
+
 
 // Start HTTP server (can be replaced with your own express app)
 const PORT = process.env.PORT || 8080;

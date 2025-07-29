@@ -71,10 +71,19 @@ async function synthesizeSpeechBuffer(text) {
     throw new Error('❌ No audio content received from Google TTS');
   }
 
-  // logging
-  console.log('🔊 TTS PCM length:', response.audioContent.length);
+  // new line to try and help with converting audio from WAV to LINEAR
+  const wavBuffer = response.audioContent;
 
-  return response.audioContent; // Already a Buffer
+  // ✅ Check WAV header to confirm it needs stripping
+  if (wavBuffer.slice(0, 4).toString() === 'RIFF') {
+    console.log('🧼 Detected WAV format — stripping header...');
+    const rawPcm = wavBuffer.slice(44);
+    console.log('🧪 Stripped PCM length:', rawPcm.length);
+    return rawPcm;
+  } else {
+    console.warn('⚠️ Expected WAV header not found — returning as-is');
+    return wavBuffer;
+  }
 }
 
 module.exports = {
