@@ -42,7 +42,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const { streamChatResponse } = require('../../utils/openai');
 
-const { synthesizeSpeechBuffer, pcmToMulaw } = require('../../utils/tts');
+const { synthesizeSpeechBuffer, pcmToMulaw } = require('../../utils/notneeded-tts');
 
 // CREATES MY WEBSOCKET SERVER AND HTTP SERVER
 
