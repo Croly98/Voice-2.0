@@ -65,19 +65,26 @@ const LOG_EVENT_TYPES = [
 // Show AI response elapsed timing calculations
 const SHOW_TIMING_MATH = false;
 
-// Root Route
+// (we define) Root Route and a route to handle incoming calls (/incoming-call)
+// will return TwiML, Twilio’s Markup Language, to direct Twilio how to handle the call
 fastify.get('/', async (request, reply) => {
     reply.send({ message: 'Twilio Media Stream Server is running!' });
 });
 
 // Route for Twilio to handle incoming calls
 // <Say> punctuation to improve text-to-speech translation
+// we hit the incoming-call hook, twilio hits this, it passed twiml back
+
 fastify.all('/incoming-call', async (request, reply) => {
+
+//this creates our twiml says the following: 
+//stream = tells twilio to connect to a stream at a different end point
+//twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
                           <Response>
-                              <Say>Please wait while we connect your call to the A. I. voice assistant, powered by Twilio and the Open-A.I. Realtime API</Say>
-                              <Pause length="1"/>
-                              <Say>O.K. you can start talking!</Say>
+                              <Say>Incoming coming call from Zeus Packaging</Say>
+                              <Pause length=".33"/>
+                              <Say>Connected</Say>
                               <Connect>
                                   <Stream url="wss://${request.headers.host}/media-stream" />
                               </Connect>
@@ -86,10 +93,15 @@ fastify.all('/incoming-call', async (request, reply) => {
     reply.type('text/xml').send(twimlResponse);
 });
 
+// summary: Told twilio to connect to the media-stream endpoint
+
+// WEBSOCKE SECTION (bit confusing but it makes sense)
+
 // WebSocket route for media-stream
+// In this we DEFINE that media-stream endpoint
 fastify.register(async (fastify) => {
-    fastify.get('/media-stream', { websocket: true }, (connection, req) => {
-        console.log('Client connected');
+    fastify.get('/media-stream', { websocket: true }, (connection, req) => { //here is where we defind it
+        console.log('Client connected'); //first connection
 
         // Connection-specific state
         let streamSid = null;
@@ -98,32 +110,36 @@ fastify.register(async (fastify) => {
         let markQueue = [];
         let responseStartTimestampTwilio = null;
 
+        // then we connect to the OpenAI websocket
         const openAiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
             headers: {
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
+                Authorization: `Bearer ${OPENAI_API_KEY}`, //openAI key (in .env)
                 "OpenAI-Beta": "realtime=v1"
             }
         });
 
         // Control initial session with OpenAI
+        // basically tells openAI all the different info we want
         const initializeSession = () => {
             const sessionUpdate = {
                 type: 'session.update',
                 session: {
-                    turn_detection: { type: 'server_vad' },
-                    input_audio_format: 'g711_ulaw',
-                    output_audio_format: 'g711_ulaw',
+                    turn_detection: { type: 'server_vad' }, //determines that you have stopped talking
+                    input_audio_format: 'g711_ulaw', //required for twilio voice (e.g pcm not supported)
+                    output_audio_format: 'g711_ulaw', //required for twilio voice
                     voice: VOICE,
                     instructions: SYSTEM_MESSAGE,
                     modalities: ["text", "audio"],
-                    temperature: 0.8,
+                    //temp: 1 = wacky, 0 = straight forward 
+                    temperature: 0.7,
                 }
             };
-
+            // once the session is defined ^ (we tell it everything we want)
+            //we then log in and send it to OpenAI
             console.log('Sending session update:', JSON.stringify(sessionUpdate));
             openAiWs.send(JSON.stringify(sessionUpdate));
 
-            // Uncomment the following line to have AI speak first:
+            // COMMENTED OUT CODE ⬇️: Uncomment the following line to have AI speak first:
             // sendInitialConversationItem();
         };
 
@@ -191,12 +207,14 @@ fastify.register(async (fastify) => {
         };
 
         // Open event for OpenAI WebSocket
+        // When openAI says these things to us, we are going to do something with it
         openAiWs.on('open', () => {
             console.log('Connected to the OpenAI Realtime API');
             setTimeout(initializeSession, 100);
         });
 
         // Listen for messages from the OpenAI WebSocket (and send to Twilio if necessary)
+        // the response from OpenAI
         openAiWs.on('message', (data) => {
             try {
                 const response = JSON.parse(data);
@@ -211,6 +229,7 @@ fastify.register(async (fastify) => {
                         streamSid: streamSid,
                         media: { payload: response.delta }
                     };
+                    // sending the audio from OpenAI to twilio media streams (the audio)
                     connection.send(JSON.stringify(audioDelta));
 
                     // First delta from a new response starts the elapsed time counter
@@ -234,24 +253,25 @@ fastify.register(async (fastify) => {
             }
         });
 
-        // Handle incoming messages from Twilio
+        // Handle incoming messages from Twilio (we receive it)
         connection.on('message', (message) => {
             try {
                 const data = JSON.parse(message);
-
+        // we either get a Media or Start event
                 switch (data.event) {
-                    case 'media':
+                    case 'media': // receive audio from the caller
                         latestMediaTimestamp = data.media.timestamp;
                         if (SHOW_TIMING_MATH) console.log(`Received media message with timestamp: ${latestMediaTimestamp}ms`);
                         if (openAiWs.readyState === WebSocket.OPEN) {
-                            const audioAppend = {
+                            // sends audio in chunks / append this to the existing convo, heres the media
+                            const audioAppend = { 
                                 type: 'input_audio_buffer.append',
                                 audio: data.media.payload
                             };
                             openAiWs.send(JSON.stringify(audioAppend));
                         }
                         break;
-                    case 'start':
+                    case 'start': // we start our stream
                         streamSid = data.start.streamSid;
                         console.log('Incoming stream has started', streamSid);
 
@@ -275,7 +295,7 @@ fastify.register(async (fastify) => {
 
         // Handle connection close
         connection.on('close', () => {
-            if (openAiWs.readyState === WebSocket.OPEN) openAiWs.close();
+            if (openAiWs.readyState === WebSocket.OPEN) openAiWs.close(); // when we close twilio we also close OpenAI
             console.log('Client disconnected.');
         });
 
@@ -290,6 +310,7 @@ fastify.register(async (fastify) => {
     });
 });
 
+// prepares the server
 fastify.listen({ port: PORT }, (err) => {
     if (err) {
         console.error(err);
