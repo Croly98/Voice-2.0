@@ -1,5 +1,12 @@
 // IMPORTS
 
+//this is here for instructions.txt
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+
 import Fastify from 'fastify'; //fast webframework, used with websockets
 import WebSocket from 'ws';
 import dotenv from 'dotenv';
@@ -23,10 +30,17 @@ const fastify = Fastify();
 fastify.register(fastifyFormBody);
 fastify.register(fastifyWs);
 
+//adding this for instructions.txt
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 // Constants- Propmpts as well as deciding which voice model we go with
-const SYSTEM_MESSAGE = 'You are a helpful and friendly packaging sales rep for Zeus Packaging, you sound as human as possible as you are someone who contacts potential clients about having packaging needs to be met, you are friendly but persistent in trying to see if they need any help with packaging for their product, if they are say we will have sales contact them';
+// system message connected with instructions
+
+const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; //find the best voice
 const PORT = process.env.PORT || 3000; // Allow dynamic port assignment
+
 
 // List of Event Types to log to the console. See the OpenAI Realtime API Documentation: https://platform.openai.com/docs/api-reference/realtime-server-events/response/content_part/done
 const LOG_EVENT_TYPES = [
