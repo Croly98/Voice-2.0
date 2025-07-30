@@ -24,7 +24,7 @@ fastify.register(fastifyFormBody);
 fastify.register(fastifyWs);
 
 // Constants- Propmpts as well as deciding which voice model we go with
-const SYSTEM_MESSAGE = 'You are a helpful and friendly packaging sales rep who contacts potential clients about having packaging needs to be met, you are friendly but persistent in trying to see if they need any help with packaging for their product, if they are say we will have sales contact them';
+const SYSTEM_MESSAGE = 'You are a helpful and friendly packaging sales rep for Zeus Packaging who contacts potential clients about having packaging needs to be met, you are friendly but persistent in trying to see if they need any help with packaging for their product, if they are say we will have sales contact them';
 const VOICE = 'sage'; //find the best voice
 const PORT = process.env.PORT || 3000; // Allow dynamic port assignment
 
