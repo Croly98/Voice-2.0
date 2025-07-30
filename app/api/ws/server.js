@@ -28,16 +28,38 @@ const SYSTEM_MESSAGE = 'You are a helpful and friendly packaging sales rep for Z
 const VOICE = 'sage'; //find the best voice
 const PORT = process.env.PORT || 3000; // Allow dynamic port assignment
 
-// List of Event Types to log to the console. See the OpenAI Realtime API Documentation: https://platform.openai.com/docs/api-reference/realtime
+// List of Event Types to log to the console. See the OpenAI Realtime API Documentation: https://platform.openai.com/docs/api-reference/realtime-server-events/response/content_part/done
 const LOG_EVENT_TYPES = [
-    'error',
-    'response.content.done',
-    'rate_limits.updated',
-    'response.done',
-    'input_audio_buffer.committed',
-    'input_audio_buffer.speech_stopped',
-    'input_audio_buffer.speech_started',
-    'session.created'
+
+// Something went wrong — check the error message for details.
+'error',
+
+// Assistant finished speaking or generating output.
+'response.content.done',
+
+// Updated info about usage limits or quotas.
+'rate_limits.updated',
+
+// Full response is complete — nothing more will be sent.
+'response.done',
+
+// Audio chunk sent and accepted for processing.
+'input_audio_buffer.committed',
+
+// User stopped speaking — end of speech detected.
+'input_audio_buffer.speech_stopped',
+
+// User started speaking — speech detected in audio.
+'input_audio_buffer.speech_started',
+
+// New session has started — ready to send/receive.
+'session.created',
+
+// default events completed, adding more below if needed
+
+// Final transcript of the user's speech is ready (not necessarily includes interruptions)
+'response.audio_transcript.done'
+
 ];
 
 // Show AI response elapsed timing calculations
