@@ -1,6 +1,6 @@
 // IMPORTS
 
-import Fastify from 'fastify';
+import Fastify from 'fastify'; //fast webframework, used with websockets
 import WebSocket from 'ws';
 import dotenv from 'dotenv';
 import fastifyFormBody from '@fastify/formbody';
@@ -12,6 +12,7 @@ dotenv.config();
 // Retrieve the OpenAI API key from environment variables.
 const { OPENAI_API_KEY } = process.env;
 
+// .env error message, if api key cant be find
 if (!OPENAI_API_KEY) {
     console.error('Missing OpenAI API key. Please set it in the .env file.');
     process.exit(1);
@@ -22,8 +23,8 @@ const fastify = Fastify();
 fastify.register(fastifyFormBody);
 fastify.register(fastifyWs);
 
-// Constants
-const SYSTEM_MESSAGE = 'You are a helpful and bubbly AI assistant who loves to chat about anything the user is interested about and is prepared to offer them facts. You have a penchant for dad jokes, owl jokes, and rickrolling – subtly. Always stay positive, but work in a joke when appropriate.';
+// Constants- Propmpts as well as deciding which voice model we go with
+const SYSTEM_MESSAGE = 'You are a helpful and friendly packaging sales rep who contacts potential clients about having packaging needs to be met, you are friendly but persistent in trying to see if they need any help with packaging for their product, if they are say we will have sales contact them';
 const VOICE = 'sage'; //find the best voice
 const PORT = process.env.PORT || 3000; // Allow dynamic port assignment
 
