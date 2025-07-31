@@ -28,7 +28,12 @@ client.calls
     //url: 'https://90b8f1f3444c.ngrok-free.app/voice', // ✅ updated URL (voice-ws-server)
 
     //update when ngrok is open again + on Twilio website
-    url:  'https://1a507076010a.ngrok-free.app/incoming-call', 
+
+    
+    url:  'https://1a507076010a.ngrok-free.app/incoming-call', // for server.js + twiml-server
+
+    //  url:  'https://1a507076010a.ngrok-free.app/voice', //for server.js + conference  
+
     to: '+353861790710',  // ✅ Your phone number
     from: '+16073094981'  // ✅ Your Twilio number
   })
