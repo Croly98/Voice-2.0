@@ -78,7 +78,7 @@ const LOG_EVENT_TYPES = [
 
 ];
 
-// Show AI response elapsed timing calculations
+// Show AI response elapsed timing calculations (FOR TESTING)
 const SHOW_TIMING_MATH = false;
 
 // (we define) Root Route and a route to handle incoming calls (/incoming-call)
