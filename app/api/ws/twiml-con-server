@@ -1,0 +1,72 @@
+// twiml-con-server.js
+
+/**
+ * ▌SUMMARY:
+ * - This TwiML server handles Twilio's POST webhook to /conference-join.
+ * - It joins the caller (AI, customer, or agent) to a shared conference room.
+ * - If the caller is unmuted (muted=false), we also start media streaming to the AI WebSocket.
+ * 
+ * ▌Run with:
+ *   node twiml-con-server.js
+ *   (ensure ngrok or a public server points to this)
+ */
+
+const express = require('express');
+const app = express();
+const port = 3000; // change if needed
+
+// Parse URL-encoded bodies sent by Twilio
+app.use(express.urlencoded({ extended: false }));
+
+// POST endpoint for joining a conference
+app.post('/conference-join', (req, res) => {
+  console.log('📞 Incoming call for conference join');
+
+  const muted = req.query.muted === 'true' ? 'true' : 'false';
+  const conferenceName = 'zeus_sales_demo';
+
+  // Update with your actual ngrok / deployed WebSocket server URL
+  const mediaStreamURL = 'wss://your-ngrok-or-domain.ngrok-free.app/media';
+
+  // Build TwiML
+  let responseXml = `
+    <Response>
+      <Say>Connecting you now. Please hold.</Say>`;
+
+  // If muted = false (AI or customer), include streaming
+  if (muted === 'false') {
+    responseXml += `
+      <Start>
+        <Stream url="${mediaStreamURL}" />
+      </Start>`;
+  }
+
+  responseXml += `
+      <Dial>
+        <Conference 
+          muted="${muted}" 
+          startConferenceOnEnter="true" 
+          endConferenceOnExit="false"
+        >
+          ${conferenceName}
+        </Conference>
+      </Dial>
+    </Response>`;
+
+  // Send XML
+  res.set('Content-Type', 'text/xml');
+  res.send(responseXml);
+});
+
+/**
+ * ▌TwiML Behavior
+ * - <Say>: Optional message
+ * - <Start><Stream>: Only added for unmuted participants (AI or customer)
+ * - <Conference>:
+ *    - muted=true: Listener only (e.g., agent)
+ *    - muted=false: Talker + listener (e.g., AI or customer)
+ */
+
+app.listen(port, () => {
+  console.log(`🎧 TwiML Conference server running at http://localhost:${port}`);
+});

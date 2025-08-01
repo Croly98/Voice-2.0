@@ -1,60 +1,61 @@
 // conferenceCall.js
 
 /**
- * TwiML Server for Conference Calling with Twilio
- * 
- * This server handles incoming voice calls and puts the caller (AI, customer, agent)
- * into a named Twilio conference room.
- * 
  * ▌SUMMARY:
- * 1. A call comes in (AI or customer).
- * 2. Twilio hits this server at /voice (set this URL in your Twilio number or API call).
- * 3. The server responds with TwiML:
- *    - Adds the caller to a named <Conference> room
- *    - Optionally configures the caller as muted/unmuted
- *    - Twilio hosts the conference automatically (up to 250 participants)
+ * - This script uses Twilio's REST API to initiate TWO outbound calls:
+ *     1. Customer → joins conference (can speak)
+ *     2. Agent → joins same conference (muted listener)
+ * - Both parties are routed through the same TwiML endpoint (/conference-join),
+ *   which defines the <Conference> behavior.
+ * 
+ * ▌HOW TO USE:
+ *   1. Update the ngrok URL to point to your live TwiML server (/conference-join).
+ *   2. Run this script with: node conferenceCall.js
+ *   3. Both users will receive a call and be joined into the "zeus_sales_demo" room.
  */
 
-const express = require('express');
-const app = express();
-const port = 3000; // CHANGE PORT IF NEEDED
+import twilio from 'twilio';
+import dotenv from 'dotenv';
 
-// Middleware to parse URL-encoded bodies (as sent by Twilio)
-app.use(express.urlencoded({ extended: false }));
+dotenv.config(); // Load .env variables
 
-// 📞 POST endpoint hit when a voice call connects
-app.post('/voice', (req, res) => {
-  console.log('📞 Incoming call received by Twilio – connecting to conference.');
+// Auth credentials from .env
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = twilio(accountSid, authToken);
 
-  const conferenceName = 'zeus_sales_demo'; // You can generate this dynamically if needed
-  const isMuted = false; // Set true for sales agent listeners, false for AI or customer
+// Define the call participants
+const CUSTOMER_NUMBER = '+353861790710';     // 🔔 Customer to call
+const AGENT_NUMBER = '+353861700000';        // 👤 Agent (muted by default)
+const FROM_NUMBER = '+16073094981';          // 📞 Your Twilio phone number
 
-
-//conferece muted "true" = can hear everything but cant be heard
-
-  res.set('Content-Type', 'text/xml');
-  res.send(`
-    <Response>
-      <Say>Connecting you to our sales line. Please hold.</Say>
-      <Dial>
-        <Conference muted="false" startConferenceOnEnter="true" endConferenceOnExit="false">
-          ${conferenceName}
-        </Conference>
-      </Dial>
-    </Response>
-  `);
-});
+// Your running TwiML server for conferencing
+const SERVER_URL = 'https://your-ngrok-url.ngrok-free.app/conference-join';
 
 /**
- * EXPLANATION OF TwiML ELEMENTS:
- *
- * - <Say>: Plays audio to the caller
- * - <Dial><Conference>: Joins the caller to a shared conference room
- *    - muted="true": caller is silent but hears others (e.g. sales agent)
- *    - startConferenceOnEnter="true": starts the conference when this caller joins
- *    - endConferenceOnExit="false": prevents ending the room when they hang up
+ * makeCall() triggers one outbound phone call.
+ * The server-side TwiML logic will place the caller into the conference.
+ * 
+ * @param {string} to - phone number to call
+ * @param {boolean} isMuted - should the participant join muted?
  */
+const makeCall = (to, isMuted) => {
+  return client.calls.create({
+    to,
+    from: FROM_NUMBER,
+    url: `${SERVER_URL}?muted=${isMuted}` // Pass muted flag as query param
+  });
+};
 
-app.listen(port, () => {
-  console.log(`🎙️  Twilio Conference Call server running at http://localhost:${port}`);
-});
+// Start both calls at the same time
+Promise.all([
+  makeCall(CUSTOMER_NUMBER, false), // Customer can speak
+  makeCall(AGENT_NUMBER, true)      // Agent is muted
+])
+  .then(responses => {
+    console.log('✅ Conference calls started successfully.');
+    responses.forEach(call => console.log(`SID: ${call.sid}`));
+  })
+  .catch(err => {
+    console.error('❌ Error starting conference calls:', err.message);
+  });
