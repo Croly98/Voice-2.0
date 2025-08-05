@@ -22,17 +22,20 @@ app.use(express.urlencoded({ extended: false }));
 app.post('/conference-join', (req, res) => {
   console.log('📞 Incoming call for conference join');
 
-//(dont change, helps with muting issues)
+//for beep
+const beep = req.query.beep === 'true' ? 'true' : 'false';
+
+//(dont change, helps with muting issues, not sure how)
 const muted = req.query.muted === 'true' ? 'true' : 'false';
   const conferenceName = 'zeus_sales_demo';
 
-  // Update with your actual ngrok / deployed WebSocket server URL
+  // Update ngrok / deployed WebSocket server URL
   const mediaStreamURL = 'wss://1904bfa53d74.ngrok-free.app/media';
 
   // Build TwiML
   let responseXml = `
     <Response>
-      <Say>Connecting you now. Please hold.</Say>`;
+      <Say>Connecting you now.</Say>`;
 
   // If muted = false (AI or customer), include streaming
   if (muted === 'false') {
@@ -41,7 +44,7 @@ const muted = req.query.muted === 'true' ? 'true' : 'false';
         <Stream url="${mediaStreamURL}" />
       </Start>`;
   }
-//ADDING TIME LIMIT FOR TESTING
+//ADDING TIME LIMIT FOR TESTING (advised) timeLimit can be deleted later
   responseXml += `
       <Dial timeLimit="90">
         <Conference 
@@ -75,19 +78,19 @@ app.listen(port, () => {
 
 /* summary of how it works
 
-You make a call using conferenceCall.js, or Twilio receives an inbound call.
+make a call using conferenceCall.js, or Twilio receives an inbound call.
 
-Twilio hits your twiml-con-server.js at /conference-join.
+Twilio hits twiml-con-server.js at /conference-join.
 
 The server responds with TwiML instructions to:
 
-Say “Connecting you now...”
+Say “Connecting”
 
-Begin streaming the call audio to your WebSocket server.
+Begin streaming the call audio to WebSocket server.
 
 Add the caller to the zeus_sales_demo conference room.
 
-The caller joins unmuted, meaning they can speak and hear others.
+The caller joins unmuted (now completed), meaning they can speak and hear others.
 
 All participants (AI, agent, customer) join the same conference room, unmuted, and can talk in real-time.
 

@@ -71,7 +71,7 @@ const LOG_EVENT_TYPES = [
 // New session has started — ready to send/receive.
 'session.created',
 
-// default events completed, adding more below if needed
+// DEFAULT EVENTS COMPLETED, ADDING MORE BELOW IF NEEDED
 
 // Final transcript of the user's speech is ready (not necessarily includes interruptions)
 'response.audio_transcript.done'
