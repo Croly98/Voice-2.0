@@ -41,9 +41,9 @@ const muted = req.query.muted === 'true' ? 'true' : 'false';
         <Stream url="${mediaStreamURL}" />
       </Start>`;
   }
-
+//ADDING TIME LIMIT FOR TESTING
   responseXml += `
-      <Dial>
+      <Dial timeLimit="90">
         <Conference 
           muted="${muted}" 
           startConferenceOnEnter="true" 
