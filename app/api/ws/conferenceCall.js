@@ -25,12 +25,12 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
 // Define the call participants
-const CUSTOMER_NUMBER = '+353861790710';     // 🔔 Customer to call
-const AGENT_NUMBER = '+353861700000';        // 👤 Agent (muted by default)
+const CUSTOMER_NUMBER = '+35386...';     // 🔔 Customer to call
+const AGENT_NUMBER = '+353861790710';        // 👤 Agent (muted by default) (need another number)
 const FROM_NUMBER = '+16073094981';          // 📞 Your Twilio phone number
 
 // Your running TwiML server for conferencing
-const SERVER_URL = 'https://your-ngrok-url.ngrok-free.app/conference-join';
+const SERVER_URL = 'https://1904bfa53d74.ngrok-free.app/conference-join';
 
 /**
  * makeCall() triggers one outbound phone call.
@@ -47,10 +47,10 @@ const makeCall = (to, isMuted) => {
   });
 };
 
-// Start both calls at the same time
+// Start both calls at the same time: true = MUTED
 Promise.all([
-  makeCall(CUSTOMER_NUMBER, false), // Customer can speak
-  makeCall(AGENT_NUMBER, true)      // Agent is muted
+  makeCall(CUSTOMER_NUMBER, false), // Customer
+  makeCall(AGENT_NUMBER, false)      // Agent
 ])
   .then(responses => {
     console.log('✅ Conference calls started successfully.');
@@ -59,3 +59,20 @@ Promise.all([
   .catch(err => {
     console.error('❌ Error starting conference calls:', err.message);
   });
+
+
+  /* summary of how it works
+
+Call both the agent and the customer.
+
+Join them into the same Twilio conference room.
+
+Unmute the customer (and AI) so they can talk.
+
+Mute the agent, who can listen silently and jump in manually if needed.
+
+Stream audio to your AI WebSocket if the participant is unmuted (AI side).
+
+Let AI respond in real-time via your server.js
+
+  */

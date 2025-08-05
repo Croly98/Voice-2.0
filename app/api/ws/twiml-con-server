@@ -1,14 +1,14 @@
 // twiml-con-server.js
 
 /**
- * ▌SUMMARY:
+ *SUMMARY:
  * - This TwiML server handles Twilio's POST webhook to /conference-join.
  * - It joins the caller (AI, customer, or agent) to a shared conference room.
  * - If the caller is unmuted (muted=false), we also start media streaming to the AI WebSocket.
  * 
- * ▌Run with:
+ *Run with:
  *   node twiml-con-server.js
- *   (ensure ngrok or a public server points to this)
+ *   ensure ngrok running, 3000 port
  */
 
 const express = require('express');
@@ -22,11 +22,12 @@ app.use(express.urlencoded({ extended: false }));
 app.post('/conference-join', (req, res) => {
   console.log('📞 Incoming call for conference join');
 
-  const muted = req.query.muted === 'true' ? 'true' : 'false';
+//(dont change, helps with muting issues)
+const muted = req.query.muted === 'true' ? 'true' : 'false';
   const conferenceName = 'zeus_sales_demo';
 
   // Update with your actual ngrok / deployed WebSocket server URL
-  const mediaStreamURL = 'wss://your-ngrok-or-domain.ngrok-free.app/media';
+  const mediaStreamURL = 'wss://1904bfa53d74.ngrok-free.app/media';
 
   // Build TwiML
   let responseXml = `
@@ -59,7 +60,7 @@ app.post('/conference-join', (req, res) => {
 });
 
 /**
- * ▌TwiML Behavior
+ *TwiML Behavior
  * - <Say>: Optional message
  * - <Start><Stream>: Only added for unmuted participants (AI or customer)
  * - <Conference>:
@@ -70,3 +71,26 @@ app.post('/conference-join', (req, res) => {
 app.listen(port, () => {
   console.log(`🎧 TwiML Conference server running at http://localhost:${port}`);
 });
+
+
+/* summary of how it works
+
+You make a call using conferenceCall.js, or Twilio receives an inbound call.
+
+Twilio hits your twiml-con-server.js at /conference-join.
+
+The server responds with TwiML instructions to:
+
+Say “Connecting you now...”
+
+Begin streaming the call audio to your WebSocket server.
+
+Add the caller to the zeus_sales_demo conference room.
+
+The caller joins unmuted, meaning they can speak and hear others.
+
+All participants (AI, agent, customer) join the same conference room, unmuted, and can talk in real-time.
+
+The AI receives audio through the WebSocket stream and can process and respond live.
+
+*/
