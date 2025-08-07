@@ -32,7 +32,7 @@ const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUT
 const FROM_NUMBER = '+16073094981';             // 🤖 Your Twilio number (used for AI)
 
 // Your TwiML server (port 3000) exposed via ngrok
-const SERVER_URL = 'https://a4e75ba236b6.ngrok-free.app/conference-join';
+const SERVER_URL = 'https://8303bd729215.ngrok-free.app/conference-join';
 
 /**
  * Initiates one outbound call into the conference.
@@ -49,8 +49,8 @@ const makeCall = (to, isMuted, beep) => {
   });
 };
 
-// 🔁 Initiate calls in sequence: AI → Customer → Agent
-makeCall(FROM_NUMBER, false, 'false') // AI joins unmuted, triggers audio stream
+// Initiate calls in sequence: AI → Customer → Agent
+makeCall(FROM_NUMBER, false, 'false&stream=true') // AI joins unmuted, triggers audio stream
   .then(() => {
     console.log('✅ AI call started (Twilio number)');
     return makeCall(CUSTOMER_NUMBER, false, 'true'); // Customer joins unmuted, beep ON

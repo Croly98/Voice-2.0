@@ -99,17 +99,30 @@ fastify.get('/', async (request, reply) => {
 fastify.all('/conference-join', async (request, reply) => {
   const { muted = 'false', beep = 'true' } = request.query;
 
+// Build optional Stream block only for AI leg 
+// this should fix the issue with the call not starting
+ const { stream = 'false' } = request.query;
+
+const streamBlock = stream === 'true' ? `
+  <Start>
+    <Stream url="wss://${request.hostname}/media" />
+  </Start>` : '';
+
+
+
+// Can use Twiml bin possible
 //this creates our twiml says the following: 
 //stream = tells twilio to connect to a stream at a different end point
 //twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
     <Response>
+    ${streamBlock}
       <Dial>
         <Conference
           beep="${beep}"
           startConferenceOnEnter="true"
           endConferenceOnExit="true"
-          muted="${muted}">
+          muted="false">
           zeus_sales_demo
         </Conference>
       </Dial>

@@ -4,7 +4,7 @@
  *SUMMARY:
  * - This TwiML server handles Twilio's POST webhook to /conference-join.
  * - It joins the caller (AI, customer, or agent) to a shared conference room.
- * - If the caller is unmuted (muted=false), we also start media streaming to the AI WebSocket.
+ * - If the caller sends stream=true, we also start media streaming to the AI WebSocket.
  * 
  *Run with:
  *   node twiml-con-server.js
@@ -22,34 +22,46 @@ app.use(express.urlencoded({ extended: false }));
 app.post('/conference-join', (req, res) => {
   console.log('📞 Incoming call for conference join');
 
-//for beep
-const beep = req.query.beep === 'true' ? 'true' : 'false';
+  // for beep
+  const beep = req.query.beep === 'true' ? 'true' : 'false';
 
-//(dont change, helps with muting issues, not sure how)
-const muted = req.query.muted === 'true' ? 'true' : 'false';
+  // (don't change, helps with muting issues, not sure how)
+  const muted = req.query.muted === 'true' ? 'true' : 'false';
+
+  // NEW: Check if we should stream audio to the AI
+  const stream = req.query.stream === 'true';
+
   const CONFERENCE_NAME = 'zeus_sales_demo';
 
-// console errors
-
-if (req.query.beep === undefined) console.warn('⚠️ No beep param provided!');
-if (req.query.muted === undefined) console.warn('⚠️ No muted param provided!');
+  // console warnings
+  if (req.query.beep === undefined) console.warn('⚠️ No beep param provided!');
+  if (req.query.muted === undefined) console.warn('⚠️ No muted param provided!');
+  if (req.query.stream === undefined) console.warn('⚠️ No stream param provided!');
 
   // Update ngrok / deployed WebSocket server URL (8080 usually)
   const mediaStreamURL = 'wss://a4e75ba236b6.ngrok-free.app/media';
+
+  // Logs for debugging request and config
+  console.log('🔍 Twilio Request Params:', req.query);
+  console.log(`🧩 mediaStreamURL used: ${mediaStreamURL}`);
+  console.log(`🧩 muted param: ${muted}`);
+  console.log(`🧩 stream param: ${stream}`);
 
   // Build TwiML
   let responseXml = `
     <Response>
       <Say>Connecting you now.</Say>`;
 
-  // If muted = false (AI or customer), include streaming
-  if (muted === 'false') {
+  // Only include <Start><Stream> if stream=true
+  if (stream) {
+    console.log('✅ Adding <Stream> block to response XML for streaming participant');
     responseXml += `
       <Start>
         <Stream url="${mediaStreamURL}" />
       </Start>`;
   }
-//ADDING TIME LIMIT FOR TESTING (advised) timeLimit can be deleted later
+
+  // ADDING TIME LIMIT FOR TESTING (advised) timeLimit can be deleted later
   responseXml += `
       <Dial timeLimit="90">
         <Conference 
@@ -70,7 +82,7 @@ if (req.query.muted === undefined) console.warn('⚠️ No muted param provided!
 /**
  *TwiML Behavior
  * - <Say>: Optional message
- * - <Start><Stream>: Only added for unmuted participants (AI or customer)
+ * - <Start><Stream>: Only added if stream=true (for AI)
  * - <Conference>:
  *    - muted=true: Listener only (e.g., agent)
  *    - muted=false: Talker + listener (e.g., AI or customer)
@@ -79,26 +91,3 @@ if (req.query.muted === undefined) console.warn('⚠️ No muted param provided!
 app.listen(port, () => {
   console.log(`🎧 TwiML Conference server running at http://localhost:${port}`);
 });
-
-
-/* summary of how it works
-
-make a call using conferenceCall.js, or Twilio receives an inbound call.
-
-Twilio hits twiml-con-server.js at /conference-join.
-
-The server responds with TwiML instructions to:
-
-Say “Connecting”
-
-Begin streaming the call audio to WebSocket server.
-
-Add the caller to the zeus_sales_demo conference room.
-
-The caller joins unmuted (now completed), meaning they can speak and hear others.
-
-All participants (AI, agent, customer) join the same conference room, unmuted, and can talk in real-time.
-
-The AI receives audio through the WebSocket stream and can process and respond live.
-
-*/
