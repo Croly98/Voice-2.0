@@ -31,8 +31,8 @@ const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUT
  // const AGENT_NUMBER = '+353000';                 // 🎧 Agent to call (MUTED, optional)
 const FROM_NUMBER = '+16073094981';             // 🤖 Your Twilio number (used for AI)
 
-// Your TwiML server (port 3000 or 8080) exposed via ngrok (added stream for a fix)
-const SERVER_URL = 'https://a4e75ba236b6.ngrok-free.app/conference-join?stream=true&muted=true&beep=false';
+// Your TwiML server (port 3000) exposed via ngrok (added stream for a fix)
+const SERVER_URL = 'https://8303bd729215.ngrok-free.app/conference-join?stream=true&muted=false&beep=true';
 
 /**
  * Initiates one outbound call into the conference.
@@ -40,22 +40,20 @@ const SERVER_URL = 'https://a4e75ba236b6.ngrok-free.app/conference-join?stream=t
  * @param {string} to - The phone number to call
  * @param {boolean} isMuted - true = muted, false = unmuted
  * @param {string} beep - "true" or "false" (play beep on enter/exit)
- * @param {boolean} stream - true = add <Start><Stream>, false = no stream
  */
-const makeCall = (to, isMuted, beep, stream = false) => {
-  const url = `${SERVER_URL}?muted=${isMuted}&beep=${beep}&stream=${stream}`;
+const makeCall = (to, isMuted, beep) => {
   return client.calls.create({
     to,
     from: FROM_NUMBER,
-    url
+    url: `${SERVER_URL}?muted=${isMuted}&beep=${beep}`
   });
 };
 
 // Initiate calls in sequence: AI → Customer → Agent
-makeCall(FROM_NUMBER, false, 'false', true) // AI joins unmuted, triggers audio stream
+makeCall(FROM_NUMBER, false, 'false&stream=true') // AI joins unmuted, triggers audio stream
   .then(() => {
     console.log('✅ AI call started (Twilio number)');
-    return makeCall(CUSTOMER_NUMBER, false, 'true', false); // Customer joins unmuted, beep ON
+    return makeCall(CUSTOMER_NUMBER, false, 'true'); // Customer joins unmuted, beep ON
   })
   .then(() => {
     console.log('✅ Customer call started');

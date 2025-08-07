@@ -16,7 +16,7 @@
 
 
 
-
+/*
 
 // express.js
 // Creates an instance of the Express application
@@ -41,7 +41,7 @@ app.use(express.urlencoded({ extended: false }));
 // have to update wss server to match 8080 NGROK
 app.post('/voice', (req, res) => {
   console.log("📞 Twilio webhook hit!"); // tests when webhooks hit
-// MAKE SURE TO UPDATE TWIML BIN (on twilio) IF URL CHANGES!!!
+// MAKE SURE TO UPDATE TWIML BIN (on twilio weebhook url) IF URL CHANGES!!!
   res.set('Content-Type', 'text/xml');
   res.send(`
     <Response>
@@ -57,3 +57,5 @@ app.post('/voice', (req, res) => {
 app.listen(port, () => {
   console.log(`Twilio TwiML server running on http://localhost:${port}`);
 });
+
+*/
