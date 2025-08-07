@@ -39,7 +39,11 @@ const __dirname = dirname(__filename);
 
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; //find the best voice
-const PORT = 8080 // Allow dynamic port assignment
+/* port kept going to 3000 for some reason
+const PORT = process.env.PORT || 8080; // Allow dynamic port assignment
+*/
+const PORT = 8080;
+
 
 //log for instructions.txt file
 console.log('[System Instructions Loaded]:\n', SYSTEM_MESSAGE);
@@ -91,33 +95,37 @@ fastify.get('/', async (request, reply) => {
 // <Say> punctuation to improve text-to-speech translation
 // we hit the incoming-call hook, twilio hits this, it passed twiml back
 
-// FOR MAKECALL.JS
-fastify.all('/incoming-call', async (request, reply) => {
+// FOR conferenceCall.JS
+fastify.all('/conference-join', async (request, reply) => {
+  const { muted = 'false', beep = 'true' } = request.query;
 
 //this creates our twiml says the following: 
 //stream = tells twilio to connect to a stream at a different end point
 //twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-                          <Response>
-                              <Say>Incoming coming call from Zeus Packaging</Say>
-                              <Pause length=".33"/>
-                              <Say>Connected</Say>
-                              <Connect>
-                                  <Stream url="wss://${request.headers.host}/media-stream" />
-                              </Connect>
-                          </Response>`;
+    <Response>
+      <Dial>
+        <Conference
+          beep="${beep}"
+          startConferenceOnEnter="true"
+          endConferenceOnExit="true"
+          muted="${muted}">
+          zeus_sales_demo
+        </Conference>
+      </Dial>
+    </Response>`;
 
-    reply.type('text/xml').send(twimlResponse);
+  reply.type('text/xml').send(twimlResponse);
 });
 
 // summary: Told twilio to connect to the media-stream endpoint
 
 // WEBSOCKE SECTION (bit confusing but it makes sense)
 
-// WebSocket route for media-stream
+// WebSocket route for media-stream (CHANGED TO JUST MEDIA)
 // In this we DEFINE that media-stream endpoint
 fastify.register(async (fastify) => {
-    fastify.get('/media-stream', { websocket: true }, (connection, req) => { //here is where we defind it
+    fastify.get('/media', { websocket: true }, (connection, req) => { //here is where we defind it
         console.log('Client connected'); //first connection
 
         // Connection-specific state

@@ -46,7 +46,7 @@ app.post('/voice', (req, res) => {
   res.send(`
     <Response>
       <Start>
-        <Stream url="wss://5de8922b7720.ngrok-free.app/media" />
+        <Stream url="wss://a4e75ba236b6.ngrok-free.app/media" />
       </Start>
       <Say>Connecting Josh...</Say>
       <Pause length="60" />

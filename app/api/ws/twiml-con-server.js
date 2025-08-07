@@ -27,10 +27,15 @@ const beep = req.query.beep === 'true' ? 'true' : 'false';
 
 //(dont change, helps with muting issues, not sure how)
 const muted = req.query.muted === 'true' ? 'true' : 'false';
-  const conferenceName = 'zeus_sales_demo';
+  const CONFERENCE_NAME = 'zeus_sales_demo';
 
-  // Update ngrok / deployed WebSocket server URL
-  const mediaStreamURL = 'wss://1904bfa53d74.ngrok-free.app/media';
+// console errors
+
+if (req.query.beep === undefined) console.warn('⚠️ No beep param provided!');
+if (req.query.muted === undefined) console.warn('⚠️ No muted param provided!');
+
+  // Update ngrok / deployed WebSocket server URL (8080 usually)
+  const mediaStreamURL = 'wss://a4e75ba236b6.ngrok-free.app/media';
 
   // Build TwiML
   let responseXml = `
@@ -52,7 +57,7 @@ const muted = req.query.muted === 'true' ? 'true' : 'false';
           startConferenceOnEnter="true" 
           endConferenceOnExit="false"
         >
-          ${conferenceName}
+          ${CONFERENCE_NAME}
         </Conference>
       </Dial>
     </Response>`;
