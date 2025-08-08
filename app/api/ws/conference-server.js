@@ -19,10 +19,7 @@ dotenv.config();
 // Retrieve the OpenAI API key from environment variables.
 const { OPENAI_API_KEY } = process.env;
 
-// .env error message, if api key cant be find X2
-
-console.log('Loaded API Key:', OPENAI_API_KEY ? 'YES' : 'NO');
-
+// .env error message, if api key cant be find
 if (!OPENAI_API_KEY) {
     console.error('Missing OpenAI API key. Please set it in the .env file.');
     process.exit(1);
@@ -92,6 +89,7 @@ const SHOW_TIMING_MATH = false;
 // will return TwiML, Twilio’s Markup Language, to direct Twilio how to handle the call
 fastify.get('/', async (request, reply) => {
     reply.send({ message: 'Twilio Media Stream Server is running!' });
+});
 
 // Route for Twilio to handle incoming calls
 // <Say> punctuation to improve text-to-speech translation
@@ -99,38 +97,39 @@ fastify.get('/', async (request, reply) => {
 
 // FOR conferenceCall.JS
 fastify.all('/conference-join', async (request, reply) => {
-  const { muted = 'false', beep = 'true', stream = 'false' } = request.query;
+  const { muted = 'false', beep = 'true' } = request.query;
 
-  // Build optional Stream block only for AI leg 
-  // this should fix the issue with the call not starting
+// Build optional Stream block only for AI leg 
+// this should fix the issue with the call not starting
+ const { stream = 'false' } = request.query;
 
-  // Assuming these come from query params, e.g.:
-  // const { stream, beep, muted } = req.query;
+const streamBlock = stream === 'true' ? `
+  <Start>
+    <Stream url="wss://${request.hostname}/media" />
+  </Start>` : '';
 
-  const streamBlock = stream === 'true' ? `
-    <Start>
-      <Stream url="wss://a4e75ba236b6.ngrok-free.app/media-stream" />
-    </Start>` : '';
+
 
 // Can use Twiml bin possible
-// this creates our twiml says the following: 
-// stream = tells twilio to connect to a stream at a different end point
-// twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
-const twimlResponse = `
-  <Response>
-    <Say>Joining conference</Say>
-    <Dial>
-      <Conference beep="${beep}" muted="${muted}">
-        zeus_sales_demo
-      </Conference>
-    </Dial>
+//this creates our twiml says the following: 
+//stream = tells twilio to connect to a stream at a different end point
+//twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
+    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
     ${streamBlock}
-  </Response>
-`;
+      <Dial>
+        <Conference
+          beep="${beep}"
+          startConferenceOnEnter="true"
+          endConferenceOnExit="true"
+          muted="false">
+          zeus_sales_demo
+        </Conference>
+      </Dial>
+    </Response>`;
 
-reply.type('text/xml').send(twimlResponse);
+  reply.type('text/xml').send(twimlResponse);
 });
-
 
 // summary: Told twilio to connect to the media-stream endpoint
 
@@ -139,47 +138,8 @@ reply.type('text/xml').send(twimlResponse);
 // WebSocket route for media-stream (CHANGED TO JUST MEDIA)
 // In this we DEFINE that media-stream endpoint
 fastify.register(async (fastify) => {
-    fastify.get('/media-stream', { websocket: true }, (connection, req) => { //here is where we defind it
+    fastify.get('/media', { websocket: true }, (connection, req) => { //here is where we defind it
         console.log('Client connected'); //first connection
-
-    // LOG TO SHOW AI SPEAKS
-
-connection.socket.on('message', (msg) => {
-    let data;
-    try {
-      data = JSON.parse(msg);
-    } catch (err) {
-      console.error('❌ Failed to parse message:', err);
-      return;
-    }
-
-    if (data.event === 'start') {
-      console.log('✅ Media stream started from Twilio');
-    }
-
-    if (data.event === 'media') {
-      // You can show how many audio bytes are being received
-      const audioLength = data.media.payload.length;
-      console.log(`🎧 Received audio payload (${audioLength} bytes)`);
-
-      // Optional: decode μ-law here and print waveform energy or sample
-    }
-
-    if (data.event === 'stop') {
-      console.log('🛑 Media stream ended');
-    }
-  });
-
-  connection.socket.on('close', () => {
-    console.log('🔴 WebSocket connection closed');
-  });
-
-  connection.socket.on('error', (err) => {
-    console.error('❌ WebSocket error:', err);
-  });
-});
-
-
 
         // Connection-specific state
         let streamSid = null;
