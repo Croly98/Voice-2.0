@@ -103,10 +103,22 @@ fastify.all('/conference-join', async (request, reply) => {
 // this should fix the issue with the call not starting
  const { stream = 'false' } = request.query;
 
+
+// KEEP ON MEDIA NOT MEDIA-STREAM!!!!
+
+ /*
 const streamBlock = stream === 'true' ? `
   <Start>
-    <Stream url="wss://${request.hostname}/media" />
+    <Stream url="wss://${request.hostname}/media-stream" />
   </Start>` : '';
+*/
+
+// testing stream URL
+
+const streamBlock = `
+  <Start>
+    <Stream url="wss://${request.headers.host}/media"/>
+  </Start>`;
 
 
 
