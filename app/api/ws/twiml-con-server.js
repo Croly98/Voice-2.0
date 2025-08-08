@@ -28,7 +28,7 @@ app.post('/conference-join', (req, res) => {
   // (don't change, helps with muting issues, not sure how)
   const muted = req.query.muted === 'true' ? 'true' : 'false';
 
-  // NEW: Check if we should stream audio to the AI
+  // Check if we should stream audio to the AI
   const stream = req.query.stream === 'true';
 
   const CONFERENCE_NAME = 'zeus_sales_demo';
