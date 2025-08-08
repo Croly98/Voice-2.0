@@ -113,14 +113,12 @@ const streamBlock = stream === 'true' ? `
   </Start>` : '';
 */
 
-// testing stream URL
+// DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT
 
 const streamBlock = `
   <Start>
-    <Stream url="wss://${request.headers.host}/media"/>
+    <Stream url="wss://${request.headers.host}/media" />
   </Start>`;
-
-
 
 // Can use Twiml bin possible
 //this creates our twiml says the following: 
