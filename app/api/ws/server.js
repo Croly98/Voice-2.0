@@ -103,7 +103,7 @@ fastify.all('/incoming-call', async (request, reply) => {
                               <Pause length=".33"/>
                               <Say>Connected</Say>
                               <Connect>
-                                  <Stream url="wss://${request.headers.host}/media-stream" />
+                                  <Stream url="wss://${request.headers.host}/media" />
                               </Connect>
                           </Response>`;
 
@@ -117,7 +117,7 @@ fastify.all('/incoming-call', async (request, reply) => {
 // WebSocket route for media-stream
 // In this we DEFINE that media-stream endpoint
 fastify.register(async (fastify) => {
-    fastify.get('/media-stream', { websocket: true }, (connection, req) => { //here is where we defind it
+    fastify.get('/media', { websocket: true }, (connection, req) => { //here is where we defind it
         console.log('Client connected'); //first connection
 
         // Connection-specific state
