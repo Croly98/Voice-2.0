@@ -1,4 +1,57 @@
-// IMPORTS
+/* Conference-server.js
+
+SUMMARY OF HOW IT WORKS:
+
+Step 1:
+    - The Fastify server starts and listens on a port
+    - It supports HTTP routes and WebSocket connections.
+
+Step 2: 
+    -Twilio calls /conference-join endpoint when someone joins the conference.
+
+ respond with twiml xml telling twilio to
+    - dial into the conference room
+    - start media stream to /media WebSocket URL
+    
+Step 3:
+    -Twilio connects a websocket to /media route to send live audio from the call
+    -server accepts this websocket connection and gets ready to handle audio streams
+
+Step 4:
+    -server opens another WebSocket connection to OpenAI’s realtime API
+    -It sends session settings (audio formats, voice, system instructions)
+
+Step 5:
+    - Twilio sends encoded audio chunks (g711_ulaw) from the caller’s voice over the /media WebSocket
+    - server forwards this audio data to OpenAI in realtime
+
+Step 6:
+    - OpenAI transcribes, understands, and generates a spoken response
+    - It sends back audio chunks (also g711_ulaw) over the WebSocket
+
+Step 7: 
+    - server immediately forwards OpenAI’s audio chunks back to Twilio via /media WebSocket
+    - Twilio plays audio to the caller
+
+Step 8: 
+    - server listens for start/stop events
+
+Step 9:
+    - The server sends “mark” events to Twilio to track where AI audio starts and ends
+    - This helps in managing timing and truncation smoothly (I think)
+
+Step 10: 
+    - When the call or WebSocket closes, the server cleans up by closing the OpenAI connection
+
+--------------------------------------------------------------------------
+
+
+/*
+---IMPORTS AND ENVIORMENTAL SET-UP
+*/
+
+
+// imports
 
 //this is here for instructions.txt
 import fs from 'fs';
@@ -13,6 +66,8 @@ import dotenv from 'dotenv';
 import fastifyFormBody from '@fastify/formbody';
 import fastifyWs from '@fastify/websocket';
 
+// envitomental set-up
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -25,23 +80,34 @@ if (!OPENAI_API_KEY) {
     process.exit(1);
 }
 
+/*
+--- FASTIFY SERVER SET-UP & DIRECTORY CONSTANTS
+*/
+
 // Initialize Fastify
 const fastify = Fastify();
 fastify.register(fastifyFormBody);
 fastify.register(fastifyWs);
 
-//adding this for instructions.txt
+//adding this for instructions.txt (prompt for ai)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Constants- Propmpts as well as deciding which voice model we go with
 // system message connected with instructions
 
+/*
+--- LOAD INSTRUCTIONS, DEFINE CONSTANTS AND CALL INSTRUCTIONS---
+*/
+
+
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; //find the best voice
 /* port kept going to 3000 for some reason
 const PORT = process.env.PORT || 8080; // Allow dynamic port assignment
 */
+
+// const port for server
 const PORT = 8080;
 
 
@@ -85,17 +151,28 @@ const LOG_EVENT_TYPES = [
 // Show AI response elapsed timing calculations (FOR TESTING)
 const SHOW_TIMING_MATH = false;
 
-// (we define) Root Route and a route to handle incoming calls (/incoming-call)
+/*
+--- HTTP ROUTES ---
+*/
+
+// basic http routes
+
+// we defineRoot Route and a route to handle incoming calls (/incoming-call)
 // will return TwiML, Twilio’s Markup Language, to direct Twilio how to handle the call
 fastify.get('/', async (request, reply) => {
     reply.send({ message: 'Twilio Media Stream Server is running!' });
 });
+
+// conference join route (my Twiml response)
 
 // Route for Twilio to handle incoming calls
 // <Say> punctuation to improve text-to-speech translation
 // we hit the incoming-call hook, twilio hits this, it passed twiml back
 
 // FOR conferenceCall.JS
+
+// conference join route
+
 fastify.all('/conference-join', async (request, reply) => {
   const { muted = 'false', beep = 'true' } = request.query;
 
@@ -129,7 +206,7 @@ const streamBlock = `
     ${streamBlock}
       <Dial>
         <Conference
-          beep="${beep}"
+          beep="true"
           startConferenceOnEnter="true"
           endConferenceOnExit="true"
           muted="false">
@@ -147,6 +224,9 @@ const streamBlock = `
 
 // WebSocket route for media-stream (CHANGED TO JUST MEDIA)
 // In this we DEFINE that media-stream endpoint
+
+// WebSocket /media Route Setup
+
 fastify.register(async (fastify) => {
     fastify.get('/media', { websocket: true }, (connection, req) => { //here is where we defind it
         console.log('Client connected'); //first connection
@@ -159,6 +239,9 @@ fastify.register(async (fastify) => {
         let responseStartTimestampTwilio = null;
 
         // then we connect to the OpenAI websocket
+
+        // OpenAI WebSocket Connection
+
         const openAiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
             headers: {
                 Authorization: `Bearer ${OPENAI_API_KEY}`, //openAI key (in .env)
@@ -168,6 +251,11 @@ fastify.register(async (fastify) => {
 
         // Control initial session with OpenAI
         // basically tells openAI all the different info we want
+
+        /*
+        --- INITIALISE OPENAI SESSION --
+        */
+
         const initializeSession = () => {
             const sessionUpdate = {
                 type: 'session.update',
@@ -191,7 +279,7 @@ fastify.register(async (fastify) => {
             // sendInitialConversationItem();
         };
 
-        // Send initial conversation item if AI talks first
+        // Send initial conversation item if AI talks first (NOT CURRENTLY USED)
         const sendInitialConversationItem = () => {
             const initialConversationItem = {
                 type: 'conversation.item.create',
@@ -211,6 +299,11 @@ fastify.register(async (fastify) => {
             openAiWs.send(JSON.stringify(initialConversationItem));
             openAiWs.send(JSON.stringify({ type: 'response.create' }));
         };
+
+        /*
+        --- HANDLE SPEECH STARTED EVENT ---
+        */
+
 
         // Handle interruption when the caller's speech starts
         const handleSpeechStartedEvent = () => {
@@ -241,6 +334,10 @@ fastify.register(async (fastify) => {
             }
         };
 
+        /*
+        --- SENDING MARKS TO TWILIO---
+        */
+
         // Send mark messages to Media Streams so we know if and when AI response playback is finished
         const sendMark = (connection, streamSid) => {
             if (streamSid) {
@@ -253,6 +350,11 @@ fastify.register(async (fastify) => {
                 markQueue.push('responsePart');
             }
         };
+
+        /*
+        OPENAI WEBSOCKET EVENT HANDLERS
+        */
+
 
         // Open event for OpenAI WebSocket
         // When openAI says these things to us, we are going to do something with it
@@ -300,6 +402,10 @@ fastify.register(async (fastify) => {
                 console.error('Error processing OpenAI message:', error, 'Raw message:', data);
             }
         });
+
+        /*
+        --- HANDLE INCOMING MESSAGES FROM TWILIO---
+        */
 
         // Handle incoming messages from Twilio (we receive it)
         connection.on('message', (message) => {
@@ -357,6 +463,11 @@ fastify.register(async (fastify) => {
         });
     });
 });
+
+/*
+--- START FASTIFY SERVER ---
+*/
+
 
 // prepares the server
 fastify.listen({ port: PORT }, (err) => {

@@ -32,7 +32,7 @@ const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUT
 const FROM_NUMBER = '+16073094981';             // 🤖 Your Twilio number (used for AI)
 
 // Your TwiML server (port 3000 or 8080) exposed via ngrok (added stream for a fix)
-const SERVER_URL = 'https://d9a0eacd9ae7.ngrok-free.app/conference-join?stream=true&muted=false&beep=false';
+const SERVER_URL = 'https://6325c76a6a57.ngrok-free.app/conference-join?stream=true&muted=false&beep=false';
 
 /**
  * Initiates one outbound call into the conference.
