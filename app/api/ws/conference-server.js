@@ -174,7 +174,7 @@ fastify.get('/', async (request, reply) => {
 // conference join route
 
 fastify.all('/conference-join', async (request, reply) => {
-  const { muted = 'false', beep = 'true' } = request.query;
+  const { beep = 'true' } = request.query;
 
 // Build optional Stream block only for AI leg 
 // this should fix the issue with the call not starting
