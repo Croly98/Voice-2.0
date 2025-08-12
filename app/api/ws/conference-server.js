@@ -198,24 +198,24 @@ const streamBlock = `
   </Start>`;
 
 // Can use Twiml bin possible
-//this creates our twiml says the following: 
-//stream = tells twilio to connect to a stream at a different end point
-//twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
-    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-    <Response>
-    ${streamBlock}
-      <Dial>
-        <Conference
-          beep="true"
-          startConferenceOnEnter="true"
-          endConferenceOnExit="true"
-          muted="false">
-          zeus_sales_demo
-        </Conference>
-      </Dial>
-    </Response>`;
+// this creates our twiml says the following: 
+// stream = tells twilio to connect to a stream at a different end point
+// twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
+const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+${streamBlock}
+  <Dial>
+    <Conference
+      beep="false"
+      startConferenceOnEnter="true"
+      endConferenceOnExit="true"
+      muted="false">
+      zeus_sales_demo
+    </Conference>
+  </Dial>
+</Response>`;
 
-  reply.type('text/xml').send(twimlResponse);
+reply.type('text/xml').send(twimlResponse);
 });
 
 // summary: Told twilio to connect to the media-stream endpoint
