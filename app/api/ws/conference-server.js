@@ -76,7 +76,7 @@ const { OPENAI_API_KEY } = process.env;
 
 // .env error message, if api key cant be find
 if (!OPENAI_API_KEY) {
-    console.error('Missing OpenAI API key. Please set it in the .env file.');
+    console.error('Missing OpenAI API key. double check .env file.');
     process.exit(1);
 }
 
@@ -359,7 +359,7 @@ fastify.register(async (fastify) => {
         // Open event for OpenAI WebSocket
         // When openAI says these things to us, we are going to do something with it
         openAiWs.on('open', () => {
-            console.log('Connected to the OpenAI Realtime API');
+            console.log('Connected to the OpenAI Realtime API!');
             setTimeout(initializeSession, 100);
         });
 
