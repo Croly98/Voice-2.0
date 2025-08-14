@@ -38,13 +38,13 @@ Step 8:
 
 Step 9:
     - The server sends “mark” events to Twilio to track where AI audio starts and ends
-    - This helps in managing timing and truncation smoothly (I think)
+    - This helps in managing timing and makes it run smoothly (I think thats what it does)
 
 Step 10: 
     - When the call or WebSocket closes, the server cleans up by closing the OpenAI connection
 
 --------------------------------------------------------------------------
-
+*/
 
 /*
 ---IMPORTS AND ENVIORMENTAL SET-UP
@@ -81,7 +81,7 @@ if (!OPENAI_API_KEY) {
 }
 
 /*
---- FASTIFY SERVER SET-UP & DIRECTORY CONSTANTS
+--- FASTIFY SERVER SET-UP & DIRECTORY CONSTANTS ---
 */
 
 // Initialize Fastify
