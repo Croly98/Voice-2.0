@@ -26,7 +26,7 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
-// 📞 Numbers to call (can be pulled from UI later)
+// 📞 Numbers to call (TODO: Be pulled from frontend)
 const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUTED)
  // const AGENT_NUMBER = '+353000';                 // 🎧 Agent to call (MUTED, optional)
 const FROM_NUMBER = '+16073094981';             // 🤖 Your Twilio number (used for AI)
