@@ -2,13 +2,16 @@
 
 /**
  * ▌SUMMARY:
- * This script initiates 2–3 outbound calls into a shared Twilio conference:
- *    1. 🤖 AI (your Twilio number) — joins unmuted, starts WebSocket stream
+ * This script initiates outbound calls into a shared Twilio conference:
+ *    1. 🤖 AI (your Twilio number) — joins automatically via TwiML webhook
  *    2. 👤 Customer — joins unmuted, hears beep on enter/exit
  *    3. 🎧 Agent — joins muted (optional), no beep
  * 
- * The AI joins first to activate streaming.
- * You can test even if Agent doesn't pick up — AI and Customer alone still works.
+ * IMPORTANT: Per Twilio Support, DO NOT dial your own Twilio number.
+ * The AI leg is created when Twilio receives an inbound call on your Twilio number
+ * and hits your /conference-join webhook (which returns <Start><Stream>).
+ * 
+ * You can test with just AI + Customer.
  * 
  * ▌HOW TO USE:
  *   1. Update the `SERVER_URL` to your ngrok HTTPS URL (port 3000).
@@ -28,11 +31,12 @@ const client = twilio(accountSid, authToken);
 
 // 📞 Numbers to call (TODO: Be pulled from frontend)
 const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUTED)
- // const AGENT_NUMBER = '+353000';                 // 🎧 Agent to call (MUTED, optional)
-const FROM_NUMBER = '+16073094981';             // 🤖 Your Twilio number (used for AI)
+// const AGENT_NUMBER = '+353000';               // 🎧 Agent to call (MUTED, optional)
+const FROM_NUMBER = '+16073094981';              // 🤖 Your Twilio number (used for AI webhook)
 
-// Your TwiML server (port 3000 or 8080) exposed via ngrok (added stream for a fix)
-const SERVER_URL = 'https://6325c76a6a57.ngrok-free.app/conference-join?stream=true&muted=false&beep=false';
+// Your TwiML server (port 3000 or 8080) exposed via ngrok
+// ⚠️ Do NOT pass "to=FROM_NUMBER" anymore — AI leg is handled by webhook
+const SERVER_URL = 'https://d69fa8c1496c.ngrok-free.app/conference-join';
 
 /**
  * Initiates one outbound call into the conference.
@@ -42,6 +46,8 @@ const SERVER_URL = 'https://6325c76a6a57.ngrok-free.app/conference-join?stream=t
  * @param {string} beep - "true" or "false" (play beep on enter/exit)
  * @param {boolean} stream - true = add <Start><Stream>, false = no stream
  */
+
+/* forget what this does exactly */
 const makeCall = (to, isMuted, beep, stream = false) => {
   const url = `${SERVER_URL}?muted=${isMuted}&beep=${beep}&stream=${stream}`;
   return client.calls.create({
@@ -51,12 +57,9 @@ const makeCall = (to, isMuted, beep, stream = false) => {
   });
 };
 
-// Initiate calls in sequence: AI → Customer → Agent
-makeCall(FROM_NUMBER, false, 'false', true) // AI joins unmuted, triggers audio stream
-  .then(() => {
-    console.log('✅ AI call started (Twilio number)');
-    return makeCall(CUSTOMER_NUMBER, false, 'true', false); // Customer joins unmuted, beep ON
-  })
+// Initiate calls: Customer → Agent (optional)
+// AI leg is handled automatically by TwiML webhook
+makeCall(CUSTOMER_NUMBER, false, 'true', false) // Customer joins unmuted, beep ON
   .then(() => {
     console.log('✅ Customer call started');
 
@@ -73,18 +76,13 @@ makeCall(FROM_NUMBER, false, 'false', true) // AI joins unmuted, triggers audio 
     console.error('❌ Error during call setup:', err.message);
   });
 
-
 /**
  * ▌SUMMARY OF BEHAVIOR
  * 
- * - AI joins first (muted=false): this starts the WebSocket stream.
- * - Customer joins second (muted=false, beep=true): they can talk and hear others.
- * - Agent joins last (muted=true, beep=false): they can listen silently.
+ * - AI leg: triggered when Twilio receives an inbound call on your Twilio number.
+ *   Twilio hits /conference-join, which returns <Start><Stream> + <Conference>.
+ * - Customer leg: dialed out via API, joins unmuted with beep ON.
+ * - Agent leg: can be added later, muted, no beep.
  * 
- * Only the AI and unmuted participants trigger the <Stream> in your TwiML.
- * The AI responds via your WebSocket server in real time.
- * 
- * You can safely skip the agent step and still have a working AI + Customer call.
+ * This avoids the Twilio loop issue (From == To) and follows Twilio Support guidance.
  */
-
-  /* beep added */

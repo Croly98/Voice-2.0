@@ -174,49 +174,36 @@ fastify.get('/', async (request, reply) => {
 // conference join route
 
 fastify.all('/conference-join', async (request, reply) => {
-  const { beep = 'true' } = request.query;
+  const { beep = 'true', muted = 'false', stream = 'false' } = request.query;
 
-// Build optional Stream block only for AI leg 
-// this should fix the issue with the call not starting
- const { stream = 'false' } = request.query;
-
-
-// KEEP ON MEDIA NOT MEDIA-STREAM!!!!
-
- /*
-const streamBlock = stream === 'true' ? `
-  <Start>
-    <Stream url="wss://${request.hostname}/media-stream" />
-  </Start>` : '';
-*/
-
-// DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT
-
-const streamBlock = `
+  // Build optional Stream block only for AI leg
+  // this should fix the issue with the call not starting
+  //
+  // KEEP ON MEDIA NOT MEDIA-STREAM!!!!
+  const streamBlock = stream === 'true' ? `
   <Start>
     <Stream url="wss://${request.headers.host}/media" />
-  </Start>`;
+  </Start>` : '';
 
-// Can use Twiml bin possible
-// this creates our twiml says the following: 
-// stream = tells twilio to connect to a stream at a different end point
-// twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
-const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+  // DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT
+  //
+  // Can use TwiML bin possible
+  // this creates our twiml says the following:
+  // stream = tells twilio to connect to a stream at a different end point
+  // twiml used to start the conversation "hey we are doing a media stream, here is where to talk"
+  const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-${streamBlock}
+  ${streamBlock}
   <Dial>
-    <Conference
-      beep="false"
-      startConferenceOnEnter="true"
-      endConferenceOnExit="true"
-      muted="false">
+    <Conference beep="${beep}" startConferenceOnEnter="true" endConferenceOnExit="true" muted="${muted}">
       zeus_sales_demo
     </Conference>
   </Dial>
 </Response>`;
 
-reply.type('text/xml').send(twimlResponse);
+  reply.type('text/xml').send(twimlResponse);
 });
+
 
 // summary: Told twilio to connect to the media-stream endpoint
 
