@@ -261,7 +261,7 @@ fastify.register(async (fastify) => {
                     instructions: SYSTEM_MESSAGE,
                     modalities: ["text", "audio"],
                     //temp: 1 = wacky, 0 = straight forward 
-                    temperature: 0.7,
+                    temperature: 0.6,
                 }
             };
             // once the session is defined ^ (we tell it everything we want)
