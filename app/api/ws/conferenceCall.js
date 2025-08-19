@@ -36,7 +36,7 @@ const FROM_NUMBER = '+16073094981';              // 🤖 Your Twilio number (use
 
 // Your TwiML server (port 3000 or 8080) exposed via ngrok
 // ⚠️ Do NOT pass "to=FROM_NUMBER" anymore — AI leg is handled by webhook
-const SERVER_URL = 'https://d69fa8c1496c.ngrok-free.app/conference-join';
+const SERVER_URL = 'https://8e26264aa693.ngrok-free.app/conference-join';
 
 /**
  * Initiates one outbound call into the conference.
@@ -59,7 +59,7 @@ const makeCall = (to, isMuted, beep, stream = false) => {
 
 // Initiate calls: Customer → Agent (optional)
 // AI leg is handled automatically by TwiML webhook
-makeCall(CUSTOMER_NUMBER, false, 'true', false) // Customer joins unmuted, beep ON
+makeCall(CUSTOMER_NUMBER, false, 'true', true) // Customer joins unmuted, beep ON
   .then(() => {
     console.log('✅ Customer call started');
 

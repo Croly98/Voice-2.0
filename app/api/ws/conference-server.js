@@ -182,7 +182,7 @@ fastify.all('/conference-join', async (request, reply) => {
   // KEEP ON MEDIA NOT MEDIA-STREAM!!!!
   const streamBlock = stream === 'true' ? `
   <Start>
-    <Stream url="wss://${request.headers.host}/media" />
+    <Stream url="wss://8e26264aa693.ngrok-free.app/media" />
   </Start>` : '';
 
   // DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT
@@ -200,6 +200,11 @@ fastify.all('/conference-join', async (request, reply) => {
     </Conference>
   </Dial>
 </Response>`;
+
+//for testing
+
+console.log('Twiml response sent to Twilio:\n', twimlResponse);
+
 
   reply.type('text/xml').send(twimlResponse);
 });
