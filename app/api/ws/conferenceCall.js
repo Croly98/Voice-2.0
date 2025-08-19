@@ -1,19 +1,19 @@
 // conferenceCall.js
 
 /**
- * ▌SUMMARY:
+ * SUMMARY:
  * This script initiates outbound calls into a shared Twilio conference:
- *    1. 🤖 AI (your Twilio number) — joins automatically via TwiML webhook
- *    2. 👤 Customer — joins unmuted, hears beep on enter/exit
- *    3. 🎧 Agent — joins muted (optional), no beep
+ *    1. AI (your Twilio number) — joins automatically via TwiML webhook
+ *    2. Customer — joins unmuted, hears beep on enter/exit
+ *    3. Agent — joins muted (optional), no beep
  * 
  * IMPORTANT: Per Twilio Support, DO NOT dial your own Twilio number.
  * The AI leg is created when Twilio receives an inbound call on your Twilio number
  * and hits your /conference-join webhook (which returns <Start><Stream>).
  * 
- * You can test with just AI + Customer.
+ * just test with AI + Customer (me).
  * 
- * ▌HOW TO USE:
+ * HOW TO USE:
  *   1. Update the `SERVER_URL` to your ngrok HTTPS URL (port 3000).
  *   2. Confirm your TwiML server is running on that ngrok URL (/conference-join).
  *   3. Run this file: `node conferenceCall.js`
@@ -77,7 +77,7 @@ makeCall(CUSTOMER_NUMBER, false, 'true', true) // Customer joins unmuted, beep O
   });
 
 /**
- * ▌SUMMARY OF BEHAVIOR
+ *   SUMMARY OF BEHAVIOR:
  * 
  * - AI leg: triggered when Twilio receives an inbound call on your Twilio number.
  *   Twilio hits /conference-join, which returns <Start><Stream> + <Conference>.

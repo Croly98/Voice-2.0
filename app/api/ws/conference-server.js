@@ -31,7 +31,7 @@ Step 6:
 
 Step 7: 
     - server immediately forwards OpenAI’s audio chunks back to Twilio via /media WebSocket
-    - Twilio plays audio to the caller
+    - Twilio plays audio to me
 
 Step 8: 
     - server listens for start/stop events
@@ -39,10 +39,12 @@ Step 8:
 Step 9:
     - The server sends “mark” events to Twilio to track where AI audio starts and ends
     - This helps in managing timing and makes it run smoothly (I think thats what it does)
-
+    - (Dont fully understand mark events yet)
 Step 10: 
     - When the call or WebSocket closes, the server cleans up by closing the OpenAI connection
 
+TIP:
+    - MAKE SURE TWILIO CONSOLE AND NGROK IS UPDATED
 --------------------------------------------------------------------------
 */
 
@@ -186,8 +188,8 @@ fastify.all('/conference-join', async (request, reply) => {
   </Start>` : '';
 
   // DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT
-  //
   // Can use TwiML bin possible
+
   // this creates our twiml says the following:
   // stream = tells twilio to connect to a stream at a different end point
   // twiml used to start the conversation "hey we are doing a media stream, here is where to talk"
@@ -267,7 +269,7 @@ fastify.register(async (fastify) => {
             console.log('Sending session update:', JSON.stringify(sessionUpdate));
             openAiWs.send(JSON.stringify(sessionUpdate));
 
-            // COMMENTED OUT CODE ⬇️: Uncomment the following line to have AI speak first:
+            // COMMENTED OUT CODE ⬇️: Uncomment the following line to have AI speak first: (breaks instructions.txt for some reason)
             // sendInitialConversationItem();
         };
 
@@ -281,7 +283,7 @@ fastify.register(async (fastify) => {
                     content: [
                         {
                             type: 'input_text',
-                            text: 'Greet the user with "Hello there! I am an AI voice assistant powered by Twilio and the OpenAI Realtime API. You can ask me for facts, jokes, or anything you can imagine. How can I help you?"'
+                            text: 'Hello!"' // change intro if needed
                         }
                     ]
                 }
@@ -297,7 +299,7 @@ fastify.register(async (fastify) => {
         */
 
 
-        // Handle interruption when the caller's speech starts
+        // Handle interruption when the caller's speech starts (got this from twilio Doc)
         const handleSpeechStartedEvent = () => {
             if (markQueue.length > 0 && responseStartTimestampTwilio != null) {
                 const elapsedTime = latestMediaTimestamp - responseStartTimestampTwilio;
@@ -399,7 +401,7 @@ fastify.register(async (fastify) => {
         --- HANDLE INCOMING MESSAGES FROM TWILIO---
         */
 
-        // Handle incoming messages from Twilio (we receive it)
+        // Handle incoming messages from Twilio (we receive it) (got from twilio doc)
         connection.on('message', (message) => {
             try {
                 const data = JSON.parse(message);
