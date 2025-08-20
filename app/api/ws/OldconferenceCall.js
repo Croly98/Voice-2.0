@@ -3,21 +3,20 @@
 /**
  * SUMMARY:
  * This script initiates outbound calls into a shared Twilio conference:
- *    1. Customer — joins unmuted, hears beep on enter/exit
- *    2. Agent — joins muted (optional), no beep
- *    3. AI — joins automatically when your Twilio number is called
+ *    1. AI (your Twilio number) — joins automatically via TwiML webhook
+ *    2. Customer — joins unmuted, hears beep on enter/exit
+ *    3. Agent — joins muted (optional), no beep
  * 
- * IMPORTANT: Per Twilio Support, DO NOT dial your own Twilio number here.
+ * IMPORTANT: Per Twilio Support, DO NOT dial your own Twilio number.
  * The AI leg is created when Twilio receives an inbound call on your Twilio number
- * and hits your /conference-join webhook (which returns <Start><Stream> + <Conference>).
+ * and hits your /conference-join webhook (which returns <Start><Stream>).
  * 
- * For now: just test with AI + Customer (you).
+ * just test with AI + Customer (me).
  * 
  * HOW TO USE:
  *   1. Update the `SERVER_URL` to your ngrok HTTPS URL (port 3000).
  *   2. Confirm your TwiML server is running on that ngrok URL (/conference-join).
- *   3. Call your Twilio number (AI leg will auto-join).
- *   4. Run this file: `node conferenceCall.js` to dial the customer leg.
+ *   3. Run this file: `node conferenceCall.js`
  */
 
 import twilio from 'twilio';
@@ -30,14 +29,14 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
-// 📞 Numbers to call
+// 📞 Numbers to call (TODO: Be pulled from frontend)
 const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUTED)
 // const AGENT_NUMBER = '+353000';               // 🎧 Agent to call (MUTED, optional)
 const FROM_NUMBER = '+16073094981';              // 🤖 Your Twilio number (used for AI webhook)
 
 // Your TwiML server (port 3000 or 8080) exposed via ngrok
-// ⚠️ Do NOT pass "to=FROM_NUMBER" anymore — AI leg is handled by inbound webhook
-const SERVER_URL = 'https://84ce2281c55e.ngrok-free.app/conference-join';
+// ⚠️ Do NOT pass "to=FROM_NUMBER" anymore — AI leg is handled by webhook
+const SERVER_URL = 'https://8e26264aa693.ngrok-free.app/conference-join';
 
 /**
  * Initiates one outbound call into the conference.
@@ -46,10 +45,9 @@ const SERVER_URL = 'https://84ce2281c55e.ngrok-free.app/conference-join';
  * @param {boolean} isMuted - true = muted, false = unmuted
  * @param {string} beep - "true" or "false" (play beep on enter/exit)
  * @param {boolean} stream - true = add <Start><Stream>, false = no stream
- * 
- * NOTE: Only *customer/agent* legs use this. 
- * The AI leg is *inbound* via Twilio number → /conference-join.
  */
+
+/* forget what this does exactly */
 const makeCall = (to, isMuted, beep, stream = false) => {
   const url = `${SERVER_URL}?muted=${isMuted}&beep=${beep}&stream=${stream}`;
   return client.calls.create({
@@ -59,22 +57,9 @@ const makeCall = (to, isMuted, beep, stream = false) => {
   });
 };
 
-/**
- * Triggers the AI leg by calling your Twilio number.
- * Twilio will then hit /conference-join which returns <Start><Stream> + <Conference>.
- */
-const triggerAiLeg = () => {
-  return client.calls.create({
-    to: FROM_NUMBER,         // 👈 your Twilio number (AI webhook)
-    from: CUSTOMER_NUMBER,   // 👈 spoof caller ID (must differ from FROM_NUMBER)
-    url: SERVER_URL
-  });
-};
-
-// === START CALL FLOW ===
-
-// Step 1: Dial customer into conference
-makeCall(CUSTOMER_NUMBER, false, 'true', false) // Customer joins unmuted, beep ON
+// Initiate calls: Customer → Agent (optional)
+// AI leg is handled automatically by TwiML webhook
+makeCall(CUSTOMER_NUMBER, false, 'true', true) // Customer joins unmuted, beep ON
   .then(() => {
     console.log('✅ Customer call started');
 
@@ -85,13 +70,6 @@ makeCall(CUSTOMER_NUMBER, false, 'true', false) // Customer joins unmuted, beep 
         console.log('✅ Agent call started (muted)');
       });
     */
-
-    // Step 2: After short delay, dial AI leg
-    setTimeout(() => {
-      triggerAiLeg()
-        .then(() => console.log('🤖 AI leg triggered'))
-        .catch(err => console.error('❌ Error starting AI leg:', err.message));
-    }, 3000);
 
   })
   .catch(err => {

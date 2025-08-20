@@ -182,9 +182,19 @@ fastify.all('/conference-join', async (request, reply) => {
   // this should fix the issue with the call not starting
   //
   // KEEP ON MEDIA NOT MEDIA-STREAM!!!!
-  const streamBlock = stream === 'true' ? `
+  // Get caller info
+  const fromNumber = request.body?.From || request.query.from; // Twilio sends From in webhook body
+
+  // Detect AI leg (the inbound call to your Twilio number)
+  const isAiLeg = fromNumber === FROM_NUMBER; 
+  // 👆 replace FROM_NUMBER with your Twilio number (+16073094981)
+  // Only the AI leg gets <Start><Stream>. Customer/Agent never do.
+
+  // Build Stream block only for AI leg
+  // KEEP ON /media NOT /media-stream !!!
+  const streamBlock = isAiLeg ? `
   <Start>
-    <Stream url="wss://8e26264aa693.ngrok-free.app/media" />
+    <Stream url="wss://84ce2281c55e.ngrok-free.app/media" />
   </Start>` : '';
 
   // DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT
@@ -192,12 +202,12 @@ fastify.all('/conference-join', async (request, reply) => {
 
   // this creates our twiml says the following:
   // stream = tells twilio to connect to a stream at a different end point
-  // twiml used to start the conversation "hey we are doing a media stream, here is where to talk"
+  // added waitURL to stop hold music
   const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   ${streamBlock}
   <Dial>
-    <Conference beep="${beep}" startConferenceOnEnter="true" endConferenceOnExit="true" muted="${muted}">
+    <Conference beep="${beep}" startConferenceOnEnter="true" endConferenceOnExit="true" muted="${muted}" waitUrl="">
       zeus_sales_demo
     </Conference>
   </Dial>
