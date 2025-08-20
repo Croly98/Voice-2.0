@@ -68,8 +68,8 @@ const makeCall = (to, isMuted, beep, stream = false) => {
  */
 const triggerAiLeg = () => {
   return client.calls.create({
-    to: FROM_NUMBER,         // 👈 your Twilio number (AI webhook)
-    from: CUSTOMER_NUMBER,   // 👈 spoof caller ID (must differ from FROM_NUMBER)
+    to: FROM_NUMBER,         // Twilio number (AI webhook)
+    from: CUSTOMER_NUMBER,   // spoof caller ID (must differ from FROM_NUMBER)
     url: SERVER_URL
   });
 };
