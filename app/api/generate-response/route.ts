@@ -9,8 +9,8 @@
 //BASE64 MOST LIKELY NEEDED FOR WEBRTC!!!
 
 import { NextResponse } from 'next/server';
-import { getGptResponse } from '../../utils/gpt';     // Calls OpenAI GPT, sends transcript, gets AI reply text
-import { synthesizeSpeech } from '../../utils/notneeded-tts';   // Converts AI reply text to speech/audio file or stream
+import { getGptResponse } from '../../other-files/TTS-STT-Project/utils/gpt';     // Calls OpenAI GPT, sends transcript, gets AI reply text
+import { synthesizeSpeech } from '../../other-files/TTS-STT-Project/utils/notneeded-tts';   // Converts AI reply text to speech/audio file or stream
 // IS THIS THE ^  CORRECT FUNCTION NAME
 export async function POST(req: Request) {
   try {

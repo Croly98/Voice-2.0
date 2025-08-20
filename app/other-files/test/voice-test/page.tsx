@@ -1,6 +1,6 @@
 'use client';
 
-import VoiceRecorder from '../components/VoiceRecorder';
+import VoiceRecorder from '../../TTS-STT-Project/components/VoiceRecorder';
 
 export default function VoiceTest() {
   const sessionId = 'test-session-123'; // simple const

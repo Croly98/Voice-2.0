@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import CallInterface from './components/CallInterface';
-import PhoneInputForm from './components/PhoneInputForm';
-import CallStatus from './components/CallStatus';
+import CallInterface from './other-files/TTS-STT-Project/components/CallInterface';
+import PhoneInputForm from './other-files/TTS-STT-Project/components/PhoneInputForm';
+import CallStatus from './other-files/TTS-STT-Project/components/CallStatus';
 import Image from 'next/image';
 
 // displays a form for initiating a call (PhoneInputForm)
