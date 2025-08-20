@@ -39,7 +39,7 @@ const __dirname = dirname(__filename);
 
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; //find the best voice
-const PORT = 8080 // Allow dynamic port assignment
+const PORT = 3000 // Allow dynamic port assignment
 
 //log for instructions.txt file
 console.log('[System Instructions Loaded]:\n', SYSTEM_MESSAGE);

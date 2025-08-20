@@ -194,7 +194,7 @@ fastify.all('/conference-join', async (request, reply) => {
   // KEEP ON /media NOT /media-stream !!!
   const streamBlock = isAiLeg ? `
   <Start>
-    <Stream url="wss://84ce2281c55e.ngrok-free.app/media" />
+    <Stream url="wss://86705a21385e.ngrok-free.app/media" />
   </Start>` : '';
 
   // DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT

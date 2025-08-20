@@ -14,7 +14,7 @@
  * For now: just test with AI + Customer (you).
  * 
  * HOW TO USE:
- *   1. Update the `SERVER_URL` to your ngrok HTTPS URL (port 3000).
+ *   1. Update the `SERVER_URL` to your ngrok HTTPS URL (port 3000/8080).
  *   2. Confirm your TwiML server is running on that ngrok URL (/conference-join).
  *   3. Call your Twilio number (AI leg will auto-join).
  *   4. Run this file: `node conferenceCall.js` to dial the customer leg.
@@ -33,11 +33,14 @@ const client = twilio(accountSid, authToken);
 // 📞 Numbers to call
 const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUTED)
 // const AGENT_NUMBER = '+353000';               // 🎧 Agent to call (MUTED, optional)
-const FROM_NUMBER = '+16073094981';              // 🤖 Your Twilio number (used for AI webhook)
+const FROM_NUMBER = '+16073094981';             // 🤖 Your Twilio number (used for AI webhook)
 
-// Your TwiML server (port 3000 or 8080) exposed via ngrok
+// Your TwiML server (port 3000/8080) exposed via ngrok
 // ⚠️ Do NOT pass "to=FROM_NUMBER" anymore — AI leg is handled by inbound webhook
-const SERVER_URL = 'https://84ce2281c55e.ngrok-free.app/conference-join';
+const SERVER_URL = 'https://86705a21385e.ngrok-free.app/conference-join';
+
+// Conference name (must match your TwiML)
+const CONFERENCE_NAME = 'zeus_sales_demo';
 
 /**
  * Initiates one outbound call into the conference.
@@ -93,6 +96,14 @@ makeCall(CUSTOMER_NUMBER, false, 'true', false) // Customer joins unmuted, beep 
         .catch(err => console.error('❌ Error starting AI leg:', err.message));
     }, 3000);
 
+    // Step 3: Schedule conference to end automatically after 90 seconds (recommened by Abhishek)
+    setTimeout(() => {
+      client.conferences(CONFERENCE_NAME)
+        .update({ status: 'completed' })
+        .then(c => console.log('⏱️ Conference ended automatically after 90s'))
+        .catch(err => console.error('❌ Error ending conference:', err.message));
+    }, 90_000); // 90 seconds
+
   })
   .catch(err => {
     console.error('❌ Error during call setup:', err.message);
@@ -102,9 +113,10 @@ makeCall(CUSTOMER_NUMBER, false, 'true', false) // Customer joins unmuted, beep 
  *   SUMMARY OF BEHAVIOR:
  * 
  * - AI leg: triggered when Twilio receives an inbound call on your Twilio number.
- *   Twilio hits /conference-join, which returns <Start><Stream> + <Conference>.
+ *   Twilio hits /conference-join, which returns <Start><Stream> + <Conference> (AI talks to all participants).
  * - Customer leg: dialed out via API, joins unmuted with beep ON.
  * - Agent leg: can be added later, muted, no beep.
+ * - Conference ends automatically after 90 seconds for all participants.
  * 
  * This avoids the Twilio loop issue (From == To) and follows Twilio Support guidance.
  */
