@@ -1,8 +1,8 @@
-# This is to try and run TWO ngrok.yml files
+# This is to try run TWO ngrok.yml files
 
 # ngrok start --all --config=C:\josh\Voice-2.0\app\ngrok.yml
 
-authtoken: 2zaQjY2eIXZvbkdA9Xou2V93sJY_3fYYdMi85sYatqV2SDKjw
+# authtoken: (can add authtoken but i dont want it in github)
 
 version: 2
 
