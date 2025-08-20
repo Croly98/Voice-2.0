@@ -43,3 +43,6 @@ next-env.d.ts
 # google service key
 google-service-key.json
 
+#NGROK.yml
+ngrok.yml
+
