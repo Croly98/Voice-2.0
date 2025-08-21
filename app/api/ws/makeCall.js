@@ -1,43 +1,59 @@
-// standalone Node.js script that makes a call through the Twilio API
-// Unlike API route version (initiateCall.ts), this one is not triggered by a user request—it (run node makeCall.js)
+// makeCall.js - Simple script to test conference calls
+// This script can be used to quickly test calling into the conference
 
-// to manually trigger: node makeCall.js
+// To use: node makeCall.js
 
-// import statements
-import twilio from 'twilio'; //loads twilio node sdk to interact with Twilios rest API
-import dotenv from 'dotenv'; //imports .env file (to find it)
+import twilio from 'twilio';
+import dotenv from 'dotenv';
 
-dotenv.config(); //loads .env file
+dotenv.config();
 
-// Added for testing/debugging (confirms .env is loading)
-console.log('SID:', process.env.TWILIO_ACCOUNT_SID); // Should log real SID
-console.log('TOKEN:', process.env.TWILIO_AUTH_TOKEN ? 'Loaded' : 'Missing'); // Should log 'Loaded'
-
-// Load from .env
+// Load Twilio credentials
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-// Creates authenticated Twilio client object used to interact with Twilio services
 const client = twilio(accountSid, authToken);
 
-// Making the Call
+// Phone numbers
+const YOUR_PHONE = '+353861790710';  // Your phone number
+const TWILIO_NUMBER = '+16073094981'; // Your Twilio number
 
-client.calls 
-  .create({ //tells twilio to start a phone call (3000)
+// IMPORTANT: Update this with your ngrok URL!
+const NGROK_URL = 'https://YOUR-NGROK-ID.ngrok-free.app'; // UPDATE THIS!
 
-    //url: 'https://90b8f1f3444c.ngrok-free.app/voice', // ✅ updated URL (voice-ws-server)
+// Choose which mode to test
+const USE_DIRECT_MODE = true; // Set to false to test conference mode
 
-    //update when ngrok is open again + on Twilio website
-    // port 3000
+console.log('🚀 Starting test call...');
+console.log('📌 Make sure to update NGROK_URL with your actual ngrok URL!');
+console.log('📌 Make sure conference-server.js is running on port 8080!');
+console.log(`🔧 Mode: ${USE_DIRECT_MODE ? 'Direct Connect' : 'Conference'}`);
 
-    url:  'https://2ee7bd44f2ab.ngrok-free.app/incoming-call', // for server.js + twiml-server
-
-    //  url:  'https://1a507076010a.ngrok-free.app/voice', //for server.js + conference  
-
-    to: '+353861790710',  // ✅ Your phone number
-    from: '+16073094981'  // ✅ Your Twilio number
-  })
-
-// result handing
-  .then(call => console.log(`📞 Call initiated with SID: ${call.sid}`))
-  .catch(error => console.error('❌ Error making call:', error));
+if (USE_DIRECT_MODE) {
+  // RECOMMENDED: Direct connection mode (simpler, more reliable)
+  client.calls
+    .create({
+      url: `${NGROK_URL}/incoming-call`,
+      to: YOUR_PHONE,
+      from: TWILIO_NUMBER
+    })
+    .then(call => {
+      console.log(`✅ Direct call started: ${call.sid}`);
+      console.log('📞 You should receive a call and be connected directly to the AI.');
+      console.log('🎯 This uses the simpler <Connect> approach.');
+    })
+    .catch(error => console.error('❌ Error making call:', error));
+} else {
+  // Conference mode (more complex, can have audio issues)
+  client.calls
+    .create({
+      url: `${NGROK_URL}/conference-join?muted=false&beep=true&ai=false`,
+      to: YOUR_PHONE,
+      from: TWILIO_NUMBER
+    })
+    .then(call => {
+      console.log(`✅ Conference call started: ${call.sid}`);
+      console.log('📞 You should receive a call and join the conference.');
+      console.log('🤖 AI bot will automatically join after 2 seconds.');
+    })
+    .catch(error => console.error('❌ Error making call:', error));
+}

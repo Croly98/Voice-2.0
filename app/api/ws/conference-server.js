@@ -67,20 +67,29 @@ import WebSocket from 'ws';
 import dotenv from 'dotenv';
 import fastifyFormBody from '@fastify/formbody';
 import fastifyWs from '@fastify/websocket';
+import twilio from 'twilio';
 
 // envitomental set-up
 
 // Load environment variables from .env file
 dotenv.config();
 
-// Retrieve the OpenAI API key from environment variables.
-const { OPENAI_API_KEY } = process.env;
+// Retrieve API keys from environment variables.
+const { OPENAI_API_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
 
 // .env error message, if api key cant be find
 if (!OPENAI_API_KEY) {
     console.error('Missing OpenAI API key. double check .env file.');
     process.exit(1);
 }
+
+if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+    console.error('Missing Twilio credentials. Check .env file.');
+    process.exit(1);
+}
+
+// Initialize Twilio client
+const twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
 /*
 --- FASTIFY SERVER SET-UP & DIRECTORY CONSTANTS ---
@@ -105,12 +114,12 @@ const __dirname = dirname(__filename);
 
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; //find the best voice
-/* port kept going to 3000 for some reason
-const PORT = process.env.PORT || 8080; // Allow dynamic port assignment
-*/
 
 // const port for server
 const PORT = 8080;
+
+// Twilio phone number for AI leg (update this with your actual Twilio number)
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '+16073094981';
 
 
 //log for instructions.txt file
@@ -160,9 +169,30 @@ const SHOW_TIMING_MATH = false;
 // basic http routes
 
 // we defineRoot Route and a route to handle incoming calls (/incoming-call)
-// will return TwiML, Twilio’s Markup Language, to direct Twilio how to handle the call
+// will return TwiML, Twilio's Markup Language, to direct Twilio how to handle the call
 fastify.get('/', async (request, reply) => {
     reply.send({ message: 'Twilio Media Stream Server is running!' });
+});
+
+// Direct connection route (simpler, more reliable than conference)
+fastify.all('/incoming-call', async (request, reply) => {
+    console.log('📞 Incoming call - using direct Connect mode');
+    
+    // Get the host from request headers for dynamic WebSocket URL
+    const wsHost = request.headers.host || 'localhost:8080';
+    const wsProtocol = wsHost.includes('ngrok') ? 'wss' : 'ws';
+    
+    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Say>Connecting to Zeus Packaging AI assistant</Say>
+        <Pause length="0.5"/>
+        <Connect>
+            <Stream url="${wsProtocol}://${wsHost}/media" />
+        </Connect>
+    </Response>`;
+    
+    console.log('TwiML response for direct connection:', twimlResponse);
+    reply.type('text/xml').send(twimlResponse);
 });
 
 // conference join route (my Twiml response)
@@ -176,23 +206,30 @@ fastify.get('/', async (request, reply) => {
 // conference join route
 
 fastify.all('/conference-join', async (request, reply) => {
-  const { beep = 'true', muted = 'false', ai = 'false' } = request.query;
+  const { beep = 'true', muted = 'false', ai = 'false', from } = request.query;
 
   // Detect AI leg from query param
   const isAiLeg = ai === 'true';
+  
+  // Get the host from request headers for dynamic WebSocket URL
+  const wsHost = request.headers.host || 'localhost:8080';
+  const wsProtocol = wsHost.includes('ngrok') ? 'wss' : 'ws';
 
   // Only AI leg gets <Start><Stream>
   const streamBlock = isAiLeg ? `
   <Start>
-    <Stream url="wss://6eb2813db8c0.ngrok-free.app/media" />
+    <Stream url="${wsProtocol}://${wsHost}/media" />
   </Start>` : '';
 
-  // DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT
-  // Can use TwiML bin possible
+  // If this is a user joining (not AI), automatically create AI leg
+  if (!isAiLeg && from !== TWILIO_PHONE_NUMBER) {
+    console.log('👤 User joining conference, creating AI leg...');
+    // Create AI leg after a short delay
+    setTimeout(() => {
+      createAiLeg(wsHost, wsProtocol);
+    }, 2000);
+  }
 
-  // this creates our twiml says the following:
-  // stream = tells twilio to connect to a stream at a different end point
-  // added waitURL to stop hold music
   const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   ${streamBlock}
@@ -203,16 +240,31 @@ fastify.all('/conference-join', async (request, reply) => {
   </Dial>
 </Response>`;
 
-//for testing
-
-console.log('Twiml response sent to Twilio:\n', twimlResponse);
-
+  console.log(`${isAiLeg ? '🤖 AI' : '👤 User'} joining conference`);
+  console.log('TwiML response:', twimlResponse);
 
   reply.type('text/xml').send(twimlResponse);
 });
 
+// Function to create AI leg
+const createAiLeg = async (wsHost, wsProtocol) => {
+  try {
+    const aiUrl = `${wsProtocol === 'wss' ? 'https' : 'http'}://${wsHost}/conference-join?ai=true&from=${TWILIO_PHONE_NUMBER}`;
+    
+    const call = await twilioClient.calls.create({
+      to: TWILIO_PHONE_NUMBER,
+      from: TWILIO_PHONE_NUMBER,
+      url: aiUrl
+    });
+    
+    console.log('🤖 AI leg created with SID:', call.sid);
+  } catch (error) {
+    console.error('❌ Error creating AI leg:', error.message);
+  }
+};
 
-// summary: Told twilio to connect to the media-stream endpoint
+
+// summary: Conference setup with automatic AI leg creation
 
 // WEBSOCKE SECTION (bit confusing but it makes sense)
 
