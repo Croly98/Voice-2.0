@@ -39,7 +39,7 @@ const __dirname = dirname(__filename);
 
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; //find the best voice
-const PORT = 3000 // Allow dynamic port assignment
+const PORT = 3000 // Allow dynamic port assignment (keep on 3000 for Twilio)
 
 //log for instructions.txt file
 console.log('[System Instructions Loaded]:\n', SYSTEM_MESSAGE);
@@ -97,6 +97,7 @@ fastify.all('/incoming-call', async (request, reply) => {
 //this creates our twiml says the following: 
 //stream = tells twilio to connect to a stream at a different end point
 //twiml used to start the conversation "hey we are doing a media stream, here is where to talk" 
+// use port 3000 for this
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
                           <Response>
                               <Say>Incoming coming call from Zeus Packaging</Say>

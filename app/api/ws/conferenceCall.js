@@ -67,12 +67,15 @@ const makeCall = (to, isMuted, beep, stream = false) => {
  * Twilio will then hit /conference-join which returns <Start><Stream> + <Conference>.
  */
 const triggerAiLeg = () => {
+  const aiUrl = `${SERVER_URL}?ai=true`;
   return client.calls.create({
-    to: FROM_NUMBER,         // Twilio number (AI webhook)
-    from: CUSTOMER_NUMBER,   // spoof caller ID (must differ from FROM_NUMBER)
-    url: SERVER_URL
+    to: FROM_NUMBER,
+    from: FROM_NUMBER,
+    url: aiUrl
   });
 };
+
+
 
 // === START CALL FLOW ===
 

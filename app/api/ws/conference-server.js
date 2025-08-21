@@ -176,23 +176,12 @@ fastify.get('/', async (request, reply) => {
 // conference join route
 
 fastify.all('/conference-join', async (request, reply) => {
-  const { beep = 'true', muted = 'false', stream = 'false' } = request.query;
+  const { beep = 'true', muted = 'false', ai = 'false' } = request.query;
 
-  // Build optional Stream block only for AI leg
-  // this should fix the issue with the call not starting
-  //
-  // KEEP ON MEDIA NOT MEDIA-STREAM!!!!
-  // Get caller info
-  const fromNumber = request.body?.From || request.query.from; // Twilio sends From in webhook body
+  // Detect AI leg from query param
+  const isAiLeg = ai === 'true';
 
-  // Detect AI leg (the inbound call to your Twilio number)
-  const isAiLeg = fromNumber === FROM_NUMBER; 
-  // 👆 replace FROM_NUMBER with your Twilio number (+16073094981)
-  // Only the AI leg gets <Start><Stream>. Customer/Agent never do.
-
-  // Build Stream block only for AI leg
-  // KEEP ON /media NOT /media-stream !!!
-  // port 8080
+  // Only AI leg gets <Start><Stream>
   const streamBlock = isAiLeg ? `
   <Start>
     <Stream url="wss://6eb2813db8c0.ngrok-free.app/media" />
