@@ -192,9 +192,10 @@ fastify.all('/conference-join', async (request, reply) => {
 
   // Build Stream block only for AI leg
   // KEEP ON /media NOT /media-stream !!!
+  // port 8080
   const streamBlock = isAiLeg ? `
   <Start>
-    <Stream url="wss://86705a21385e.ngrok-free.app/media" />
+    <Stream url="wss://6eb2813db8c0.ngrok-free.app/media" />
   </Start>` : '';
 
   // DONT CHANGE THIS PART, IT WORKS FOR 101 PROTOCOLS AND TRANSCRIPT

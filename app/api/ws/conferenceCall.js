@@ -35,9 +35,9 @@ const CUSTOMER_NUMBER = '+353861790710';         // 👤 Customer to call (UNMUT
 // const AGENT_NUMBER = '+353000';               // 🎧 Agent to call (MUTED, optional)
 const FROM_NUMBER = '+16073094981';             // 🤖 Your Twilio number (used for AI webhook)
 
-// Your TwiML server (port 3000/8080) exposed via ngrok
+// Your TwiML server (8080) exposed via ngrok
 // ⚠️ Do NOT pass "to=FROM_NUMBER" anymore — AI leg is handled by inbound webhook
-const SERVER_URL = 'https://86705a21385e.ngrok-free.app/conference-join';
+const SERVER_URL = 'https://6eb2813db8c0.ngrok-free.app/conference-join';
 
 // Conference name (must match your TwiML)
 const CONFERENCE_NAME = 'zeus_sales_demo';
