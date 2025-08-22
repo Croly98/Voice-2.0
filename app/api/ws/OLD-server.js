@@ -1,3 +1,7 @@
+// THIS SERVER IS JUST 1 ON 1 WITH AI
+// NO CONFERENCE SET UP HERE
+
+
 // IMPORTS
 
 //this is here for instructions.txt

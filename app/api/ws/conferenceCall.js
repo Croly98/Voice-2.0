@@ -34,7 +34,7 @@ const YOUR_PHONE_NUMBER = '+353861790710';      // Your phone number
 const TWILIO_NUMBER = '+16073094981';           // Your Twilio number
 
 // Your server (port 8080) exposed via ngrok - UPDATE THIS WITH YOUR NGROK URL
-const SERVER_URL = 'https://YOUR-NGROK-ID.ngrok-free.app/conference-join';
+const SERVER_URL = 'https://615213f791f0.ngrok-free.app/conference-join';
 
 // Conference name (must match your TwiML)
 const CONFERENCE_NAME = 'zeus_sales_demo';
@@ -73,7 +73,7 @@ console.log('📌 Make sure to update SERVER_URL with your ngrok URL!');
 
 // OPTION 1: Programmatically start both legs
 // Uncomment the code below to use this option
-
+// Have start comment here (for only call ins)
 /*
 // Step 1: Start the AI leg (with media stream)
 makeConferenceCall(TWILIO_NUMBER, true, false, 'false')
@@ -98,9 +98,10 @@ makeConferenceCall(TWILIO_NUMBER, true, false, 'false')
     }, 120000); // 2 minutes
   })
   .catch(err => console.error('❌ Error starting AI leg:', err.message));
+// have end comment here if wanting to stop conference call
 */
-
 // OPTION 2: Manual setup instructions
+// NOTE: maybe conference-join?ai=true 
 console.log(`
 📋 MANUAL SETUP INSTRUCTIONS:
 1. Make sure conference-server.js is running on port 8080
@@ -108,7 +109,7 @@ console.log(`
 3. Copy your ngrok URL (e.g., https://abc123.ngrok-free.app)
 4. Update SERVER_URL in this file with your ngrok URL
 5. Go to Twilio Console > Phone Numbers > Your Number
-6. Set the webhook URL to: https://[your-ngrok].ngrok-free.app/conference-join?ai=true
+6. Set the webhook URL to: https://[your-ngrok].ngrok-free.app/conference-join
 7. Call your Twilio number (${TWILIO_NUMBER}) from your phone
 8. You'll be connected to the AI bot in the conference!
 

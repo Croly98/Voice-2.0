@@ -63,11 +63,11 @@ import { dirname, join } from 'path';
 
 
 import Fastify from 'fastify'; //fast webframework, used with websockets
-import WebSocket from 'ws';
-import dotenv from 'dotenv';
-import fastifyFormBody from '@fastify/formbody';
-import fastifyWs from '@fastify/websocket';
-import twilio from 'twilio';
+import WebSocket from 'ws'; // webSocket client/server
+import dotenv from 'dotenv'; // loads my .env file
+import fastifyFormBody from '@fastify/formbody'; // parse form POST bodies (i think)
+import fastifyWs from '@fastify/websocket'; // WebSocket routes inside Fastify
+import twilio from 'twilio'; // Twilio REST client
 
 // envitomental set-up
 
@@ -88,7 +88,7 @@ if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
     process.exit(1);
 }
 
-// Initialize Twilio client
+// REST client which triggers twilio calls programmaticlaly (AI leg)
 const twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
 /*
@@ -96,30 +96,28 @@ const twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 */
 
 // Initialize Fastify
-const fastify = Fastify();
-fastify.register(fastifyFormBody);
-fastify.register(fastifyWs);
+const fastify = Fastify(); //start server
+fastify.register(fastifyFormBody); // enable form POSTs
+fastify.register(fastifyWs); // Enable WebSockets routes
 
 //adding this for instructions.txt (prompt for ai)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Constants- Propmpts as well as deciding which voice model we go with
-// system message connected with instructions
-
 /*
 --- LOAD INSTRUCTIONS, DEFINE CONSTANTS AND CALL INSTRUCTIONS---
 */
 
-
+// Loads instructions.txt
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
+// OpenAI voice model
 const VOICE = 'sage'; //find the best voice
 
-// const port for server
+// const port for server (had to use const as had issues getting correct port)
 const PORT = 8080;
 
 // Twilio phone number for AI leg (update this with your actual Twilio number)
-const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '+16073094981';
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '+16073094981'; // change if needed
 
 
 //log for instructions.txt file
@@ -168,13 +166,12 @@ const SHOW_TIMING_MATH = false;
 
 // basic http routes
 
-// we defineRoot Route and a route to handle incoming calls (/incoming-call)
-// will return TwiML, Twilio's Markup Language, to direct Twilio how to handle the call
+// quick health-check endpoint (confirms if server is running)
 fastify.get('/', async (request, reply) => {
     reply.send({ message: 'Twilio Media Stream Server is running!' });
 });
 
-// Direct connection route (simpler, more reliable than conference)
+// Direct connection route (been told its simpler and more reliable than conference)
 fastify.all('/incoming-call', async (request, reply) => {
     console.log('📞 Incoming call - using direct Connect mode');
     
