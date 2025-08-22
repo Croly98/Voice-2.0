@@ -1,12 +1,15 @@
 SHORT TERM
 
 - need to make sure direct calls are also conferences
-- outbound to my number for some reason has two AI agents
-- need to have both options set up to adda  third participant
+- outbound to my number for some reason has two AI agents, need to fix
+- need to have both options set up to add third participant
 
 MEDIUM TERM
 
-- find a way to mute AI when needed
+- update frontend once short terms goals are completed
+- find a way to mute AI when needed (either mute or put on hold )
+- update frontend with muted button
+- "barge" where a sales agent can jump in whe listening
 
 LONG TERM
 
