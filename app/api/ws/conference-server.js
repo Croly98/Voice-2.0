@@ -2,46 +2,91 @@
 
 SUMMARY OF HOW IT WORKS:
 
-Step 1:
-    - The Fastify server starts and listens on a port
-    - It supports HTTP routes and WebSocket connections.
+Step 1: SERVER IS RUNNING
+    - our Fastify server is up on port 8080
+    - conference-join and /media endpoints are ready
+    - it’s connected to Twilio (via webhooks) and can connect to OpenAI (via WebSocket)
 
-Step 2: 
-    -Twilio calls /conference-join endpoint when someone joins the conference.
 
- respond with twiml xml telling twilio to
-    - dial into the conference room
-    - start media stream to /media WebSocket URL
+Step 2: HUMAN DIALS MY TWILIO NUMBER
+    - twilio receives the call and checks your webhook
+    - it makes an HTTP request to /conference-join (without ai=true)
+
     
-Step 3:
-    -Twilio connects a websocket to /media route to send live audio from the call
-    -server accepts this websocket connection and gets ready to handle audio streams
+Step 3: SERVER RESPONDS WITH TWIML
+    - "put this caller in a conference room called zeus_sales_demo”
+    - no <Start><Stream> because this is a human leg
 
-Step 4:
-    -server opens another WebSocket connection to OpenAI’s realtime API
-    -It sends session settings (audio formats, voice, system instructions)
+    - Caller is now sitting in the conference room, waiting
 
-Step 5:
-    - Twilio sends encoded audio chunks (g711_ulaw) from the caller’s voice over the /media WebSocket
-    - server forwards this audio data to OpenAI in realtime
 
-Step 6:
-    - OpenAI transcribes, understands, and generates a spoken response
-    - It sends back audio chunks (also g711_ulaw) over the WebSocket
+Step 4: SERVER CREATES AI LEG
+    - the server sees this is a human leg (not AI)
+    - it uses the Twilio REST API to place another call:
+        - to = your Twilio number
+        - from = your Twilio number
+        - url = /conference-join?ai=true
 
-Step 7: 
-    - server immediately forwards OpenAI’s audio chunks back to Twilio via /media WebSocket
-    - Twilio plays audio to me
 
-Step 8: 
-    - server listens for start/stop events
+Step 5: AI LEG JOINS CONFERENCE
+    - twilio dials itself back into /conference-join?ai=true
+    - server replies with TwiML:
+        - join zeus_sales_demo conference
+        - also <Start><Stream> to /media
 
-Step 9:
-    - The server sends “mark” events to Twilio to track where AI audio starts and ends
-    - This helps in managing timing and makes it run smoothly (I think thats what it does)
-    - (Dont fully understand mark events yet)
-Step 10: 
-    - When the call or WebSocket closes, the server cleans up by closing the OpenAI connection
+    - now AI leg is in the same room as the person      
+
+
+Step 6: TWILIO STARTS MEDIA STREAM
+    - twilio opens a WebSocket connection to /media
+    - it sends an initial start event with a streamSid
+    - after that, it starts sending media events with chunks of caller audio
+
+
+Step 7: SERVER CONNECT TO OPENAI
+    - when /media opens, server creates a WebSocket connection to OpenAI Realtime API
+    - it sends a session update telling OpenAI:
+        - expect audio in g711_ulaw.
+        - reply with audio in g711_ulaw
+        - use the "sage" voice. (for now)
+        - use instructions.txt as system prompt
+        - detect when caller stops speaking (server_vad)
+
+
+Step 8: CALLER SPEAKS
+    - caller says: “Hello, I need some packaging”
+    - twilio sends chunks of μ-law audio → /media
+    - server forwards them to OpenAI as input_audio_buffer.append
+    - when silence is detected, OpenAI is prompted to generate a response
+
+Step 9: AI RESPONDS 
+    - openAI replies with response.audio.delta events (audio chunks).
+    - server forwards these immediately to Twilio as media events.
+    - twilio plays them into the conference → caller hears the AI voice.
+    - server also sends mark events so Twilio knows when playback aligns.
+
+
+Step 10: CALLER INTERUPTS (need to make sure its not too sensitive)
+    - If caller starts talking mid-response:
+        - twilio sends input_audio_buffer.speech_started
+        - server tells OpenAI to truncate the current audio (conversation.item.truncate)
+        - AI audio is cut short
+        - conversation continues naturally
+
+Step 11: CONVERSATION CONTINUES
+    - each turn follows the same cycle:
+        - caller audio → /media → OpenAI
+        - openAI reply audio → /media → Twilio → conference
+        - marks track timing
+        - truncation if caller interrupts
+
+
+Step 12: CALL ENDS
+    - when either hangs up:
+        - twilio closes the conference leg
+        - /media WebSocket closes
+        - server closes the OpenAI Websocket
+    - everything is cleaned up 
 
 TIP:
     - MAKE SURE TWILIO CONSOLE AND NGROK IS UPDATED
@@ -535,3 +580,13 @@ fastify.listen({ port: PORT }, (err) => {
     }
     console.log(`Server is listening on port ${PORT}`);
 });
+
+/* Final Flow Recap (like a chain)
+
+Human Caller 📞 → Twilio Call → /conference-join → Conference Room
+→ Server dials AI leg → Twilio AI Call → /conference-join?ai=true
+→ AI leg streams audio to /media WebSocket
+→ Server bridges Twilio ↔ OpenAI Realtime
+→ Caller’s voice → AI brain → AI voice back → Caller
+
+*/
