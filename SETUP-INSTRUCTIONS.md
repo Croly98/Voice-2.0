@@ -43,12 +43,12 @@ You have two options for connecting to the AI:
 3. Click on your Twilio number
 4. In the "Voice Configuration" section:
    - Set "A call comes in" to: Webhook
-   - URL: `https://[your-ngrok-id].ngrok-free.app/incoming-call`
+   - URL: `https://[your-ngrok-id].ngrok-free.app/incoming-call?ai=true`
    - Method: HTTP POST
 5. Save the configuration
 
 #### Option B: Conference Mode (More Complex)
-Use the same steps as above but with URL: `https://[your-ngrok-id].ngrok-free.app/conference-join`
+Use the same steps as above but with URL: `https://[your-ngrok-id].ngrok-free.app/conference-join?ai=true`
 - The system will automatically create an AI leg when you join the conference
 - May have audio routing issues
 

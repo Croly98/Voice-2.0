@@ -3,7 +3,7 @@
 SUMMARY OF HOW IT WORKS:
 
 Step 1: SERVER IS RUNNING
-    - our Fastify server is up on port 8080
+    - fastify server is up on port 8080
     - conference-join and /media endpoints are ready
     - it’s connected to Twilio (via webhooks) and can connect to OpenAI (via WebSocket)
 
