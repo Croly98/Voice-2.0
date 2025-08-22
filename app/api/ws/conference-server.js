@@ -171,6 +171,7 @@ fastify.get('/', async (request, reply) => {
     reply.send({ message: 'Twilio Media Stream Server is running!' });
 });
 
+// CHANGE THIS AS IT NEED TO BE SET UP FOR CONFERENCE
 // /incoming-call
 // Direct connection route (been told its simpler and more reliable than conference)
 fastify.all('/incoming-call', async (request, reply) => {
@@ -202,7 +203,6 @@ fastify.all('/incoming-call', async (request, reply) => {
 // FOR conferenceCall.JS
 
 // conference join route
-
 fastify.all('/conference-join', async (request, reply) => {
   const { beep = 'true', muted = 'false', ai = 'false', from } = request.query;
 
@@ -221,14 +221,16 @@ fastify.all('/conference-join', async (request, reply) => {
   </Start>` : '';
 
   // If this is a user joining (not AI), automatically create AI leg
+  // When a human joins, server automatically dials the AI leg into the same conference
   if (!isAiLeg && from !== TWILIO_PHONE_NUMBER) {
     console.log('👤 User joining conference, creating AI leg...');
     // Create AI leg after a short delay
     setTimeout(() => {
       createAiLeg(wsHost, wsProtocol);
-    }, 2000);
+    }, 1500);
   }
 
+  // Twilio XML response to actually join the conference
   const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   ${streamBlock}
@@ -246,6 +248,7 @@ fastify.all('/conference-join', async (request, reply) => {
 });
 
 // Function to create AI leg
+// Makes Twilio dial its own number back in with ai=true - AI joins
 const createAiLeg = async (wsHost, wsProtocol) => {
   try {
     const aiUrl = `${wsProtocol === 'wss' ? 'https' : 'http'}://${wsHost}/conference-join?ai=true&from=${TWILIO_PHONE_NUMBER}`;
@@ -265,6 +268,7 @@ const createAiLeg = async (wsHost, wsProtocol) => {
 
 // summary: Conference setup with automatic AI leg creation
 
+
 // WEBSOCKE SECTION (bit confusing but it makes sense)
 
 // WebSocket route for media-stream (CHANGED TO JUST MEDIA)
@@ -272,19 +276,21 @@ const createAiLeg = async (wsHost, wsProtocol) => {
 
 // WebSocket /media Route Setup
 
+// This is where Twilio Media Stream connects
+// Every call leg streams here
 fastify.register(async (fastify) => {
     fastify.get('/media', { websocket: true }, (connection, req) => { //here is where we defind it
         console.log('Client connected'); //first connection
 
-        // Connection-specific state
+        // Connection-specific state (state variables)
+        // Track audio timestamps, AI messages, mark events, etc
         let streamSid = null;
         let latestMediaTimestamp = 0;
         let lastAssistantItem = null;
         let markQueue = [];
         let responseStartTimestampTwilio = null;
 
-        // then we connect to the OpenAI websocket
-
+        // then we connect to the OpenAI websocket (OpenAI Realtime API)
         // OpenAI WebSocket Connection
 
         const openAiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
@@ -316,11 +322,11 @@ fastify.register(async (fastify) => {
                 }
             };
             // once the session is defined ^ (we tell it everything we want)
-            //we then log in and send it to OpenAI
+            // we then log in and send it to OpenAI
             console.log('Sending session update:', JSON.stringify(sessionUpdate));
             openAiWs.send(JSON.stringify(sessionUpdate));
 
-            // COMMENTED OUT CODE ⬇️: Uncomment the following line to have AI speak first: (breaks instructions.txt for some reason)
+            // COMMENTED OUT CODE ⬇️: Uncomment the following line to have AI speak first: ( also breaks instructions.txt for some reason)
             // sendInitialConversationItem();
         };
 
@@ -383,7 +389,10 @@ fastify.register(async (fastify) => {
         --- SENDING MARKS TO TWILIO---
         */
 
-        // Send mark messages to Media Streams so we know if and when AI response playback is finished
+        // Send mark messages to Media Streams so we know if and when AI response playback is finished (got this from twilio Doc)
+
+        // Marks tell Twilio when a chunk of AI speech has been sent
+        // Used to sync playback timing
         const sendMark = (connection, streamSid) => {
             if (streamSid) {
                 const markEvent = {
@@ -410,6 +419,7 @@ fastify.register(async (fastify) => {
 
         // Listen for messages from the OpenAI WebSocket (and send to Twilio if necessary)
         // the response from OpenAI
+        // On AI audio chunk → forward to Twilio + On user speech detected → truncate AI
         openAiWs.on('message', (data) => {
             try {
                 const response = JSON.parse(data);
@@ -453,6 +463,9 @@ fastify.register(async (fastify) => {
         */
 
         // Handle incoming messages from Twilio (we receive it) (got from twilio doc)
+        // On media → send caller audio to OpenAI
+        // On start → save stream ID
+        // On mark → consume queued marks
         connection.on('message', (message) => {
             try {
                 const data = JSON.parse(message);
