@@ -171,6 +171,7 @@ fastify.get('/', async (request, reply) => {
     reply.send({ message: 'Twilio Media Stream Server is running!' });
 });
 
+// /incoming-call
 // Direct connection route (been told its simpler and more reliable than conference)
 fastify.all('/incoming-call', async (request, reply) => {
     console.log('📞 Incoming call - using direct Connect mode');
@@ -213,6 +214,7 @@ fastify.all('/conference-join', async (request, reply) => {
   const wsProtocol = wsHost.includes('ngrok') ? 'wss' : 'ws';
 
   // Only AI leg gets <Start><Stream>
+  // twilio streams to media
   const streamBlock = isAiLeg ? `
   <Start>
     <Stream url="${wsProtocol}://${wsHost}/media" />

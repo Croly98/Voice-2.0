@@ -33,7 +33,8 @@ const client = twilio(accountSid, authToken);
 const YOUR_PHONE_NUMBER = '+353861790710';      // Your phone number
 const TWILIO_NUMBER = '+16073094981';           // Your Twilio number
 
-// Your server (port 8080) exposed via ngrok - UPDATE THIS WITH YOUR NGROK URL
+// Your server (port 8080) exposed via ngrok - UPDATE THIS WITH YOUR NGROK URL 
+// ONLY TWILIO CONSOLE SHOULD HAVE ?ai=true
 const SERVER_URL = 'https://615213f791f0.ngrok-free.app/conference-join';
 
 // Conference name (must match your TwiML)
@@ -74,7 +75,7 @@ console.log('📌 Make sure to update SERVER_URL with your ngrok URL!');
 // OPTION 1: Programmatically start both legs
 // Uncomment the code below to use this option
 // Have start comment here (for only call ins)
-/*
+
 // Step 1: Start the AI leg (with media stream)
 makeConferenceCall(TWILIO_NUMBER, true, false, 'false')
   .then(call => {
@@ -99,7 +100,7 @@ makeConferenceCall(TWILIO_NUMBER, true, false, 'false')
   })
   .catch(err => console.error('❌ Error starting AI leg:', err.message));
 // have end comment here if wanting to stop conference call
-*/
+
 // OPTION 2: Manual setup instructions
 // NOTE: maybe conference-join?ai=true 
 console.log(`
