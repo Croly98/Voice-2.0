@@ -5,7 +5,7 @@ Updated Configuration:
 
   To test:
 
-  1. Set your Twilio webhook to: https://ff3c1c367f6a.ngrok-free.app/voice
+  1. Set your Twilio webhook to: https://PORT3000.ngrok-free.app/voice (port 3000)
   2. Run the conference server: node app/api/ws/twilio-conference-with-ai.js
   3. Run the AI server: node app/api/ws/ai-server-for-conference.js
   4. Call your Twilio number from the moderator phone (+353861790710)
