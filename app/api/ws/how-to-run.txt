@@ -9,3 +9,68 @@ Updated Configuration:
   2. Run the conference server: node app/api/ws/twilio-conference-with-ai.js
   3. Run the AI server: node app/api/ws/ai-server-for-conference.js
   4. Call your Twilio number from the moderator phone (+353861790710)
+
+
+
+  1. Added Second Participant Configuration - Added constant for second participant number (+353861790710)
+  2. Updated Conference State - Changed from single aiCallSid to array outboundCalls to track multiple
+  participants
+  3. Created Helper Function - addParticipantToConference() handles outbound calling logic for any participant      
+  4. Modified Conference Start Handler - Now calls both AI bot and second participant in parallel when
+  conference starts
+  5. Added New Endpoint - /participant-join-conference endpoint for regular participants (with beep, unlike AI      
+  bot)
+  6. Enhanced Call Status Tracking - Single /outbound-call-status endpoint handles status for all outbound
+  calls with proper logging
+  7. Updated Conference End Handler - Terminates all active outbound calls when conference ends
+  8. Improved Logging - Better console output showing configuration and tracking of all participants
+
+  How It Works Now:
+
+  1. When the moderator (+35319079387) calls and joins the conference
+  2. Conference starts and triggers two parallel outbound calls:
+    - AI Bot (+35319079387) → joins with WebSocket stream to AI server
+    - Second Participant (+353861790710) → joins as regular participant
+  3. Both participants are tracked in the outboundCalls array
+  4. When conference ends, all outbound calls are terminated automatically
+
+  The system now properly handles multiple outbound participants with error handling and comprehensive logging      
+  for monitoring the conference state.
+
+
+  OUTBOUND CALL test
+
+  =====================================
+  🎯 TWILIO OUTBOUND CALLING TEST
+  =====================================
+  Using Twilio number: +16073094981
+  Testing 2 outbound calls...
+
+  🔄 Calling AI Bot (Thalia) at +35319079387...
+  ✅ AI Bot (Thalia) call initiated successfully!
+     Call SID: CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+     Status: queued
+     From: +16073094981
+     To: +35319079387
+
+  🔄 Calling Second Participant at +353861790710...
+  ✅ Second Participant call initiated successfully!
+     Call SID: CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  📊 TEST RESULTS SUMMARY
+  🎯 2/2 calls initiated successfully
+  🎉 All test calls successful!
+
+  To Test Your Full Conference System:
+
+  1. Start the AI server:
+  node app/api/ws/ai-server-for-conference.js
+
+  2. Start the conference server:
+  node app/api/ws/twilio-conference-with-ai.js
+
+  3. Call your main Twilio number (+16073094981) from the moderator phone (+35319079387)
+    - Conference will start
+    - Both AI bot and second participant will be called automatically
+
+  The test script helps verify your outbound calling works before testing the full conference flow.
