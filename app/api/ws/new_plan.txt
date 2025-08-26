@@ -1,0 +1,7 @@
+1. Twilio confernce server running from +16073094981
+
+2. Twilio outbounds to two numbers :
+    - +353861790710 (my number)
+    - +35319079387 (AI voice)
+
+

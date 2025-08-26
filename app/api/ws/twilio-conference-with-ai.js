@@ -102,7 +102,7 @@ app.post('/conference-status', async (req, res) => {
         try {
             const aiCall = await client.calls.create({
                 url: `https://${NGROK_CONFERENCE_URL}/ai-join-conference`,
-                to: TWILIO_PHONE_NUMBER, // Call to your Twilio number
+                to: TWILIO_AI_NUMBER, // Call to AI Twilio number (Irish one)
                 from: TWILIO_PHONE_NUMBER,
                 statusCallback: `https://${NGROK_CONFERENCE_URL}/ai-call-status`,
                 statusCallbackEvent: ['initiated', 'answered', 'completed']

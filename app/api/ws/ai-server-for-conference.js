@@ -13,6 +13,8 @@ Handling interruptions, transcription logs, and playback synchronization
 
 */
 
+// NEW AI PHONE NUMBER +35319079387
+
 // IMPORTS & SET UP
 import fs from 'fs';
 import path from 'path';
