@@ -1,16 +1,29 @@
-// AI SERVER FOR CONFERENCE CALLS
+// AI SERVER FOR CONFERENCE CALLS (the AI side of the conference)
 // Run this on port 3001 alongside the conference server
 
-// IMPORTS
+/* 
+
+-Accepting audio streams from Twilio (via <Stream> in TwiML).
+
+-Relaying audio back and forth between Twilio and OpenAI’s Realtime API.
+
+Making the AI behave in a conference-friendly way (polite, concise, not interrupting).
+
+Handling interruptions, transcription logs, and playback synchronization
+
+*/
+
+// IMPORTS & SET UP
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import Fastify from 'fastify';
-import WebSocket from 'ws';
-import dotenv from 'dotenv';
-import fastifyFormBody from '@fastify/formbody';
-import fastifyWs from '@fastify/websocket';
+
+import Fastify from 'fastify'; //fast webframework, used with websockets
+import WebSocket from 'ws'; // webSocket client/server
+import dotenv from 'dotenv'; // load .env file
+import fastifyFormBody from '@fastify/formbody'; // parse form POST bodies (i think)
+import fastifyWs from '@fastify/websocket'; // WebSocket routes inside Fastify
 
 // Load environment variables
 dotenv.config();
@@ -32,13 +45,13 @@ const __dirname = dirname(__filename);
 
 // Constants
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
-const VOICE = 'sage';
+const VOICE = 'sage'; // voice model (Shimmer or Verse might be better)
 const PORT = 3001; // Different port from conference server
 const NGROK_AI_URL = '8cbef3e3f118.ngrok-free.app'; // PORT 3001
 
 console.log('[AI Server] System Instructions Loaded:\n', SYSTEM_MESSAGE);
 
-// Conference-aware system message
+// Conference-aware system message WILL MOST LIKELY GET RID OF THIS
 const CONFERENCE_SYSTEM_MESSAGE = SYSTEM_MESSAGE + `
 
 You are participating in a conference call with potentially multiple participants.
@@ -50,29 +63,52 @@ You are participating in a conference call with potentially multiple participant
 
 // Event types to log
 const LOG_EVENT_TYPES = [
-    'error',
-    'response.content.done',
-    'rate_limits.updated',
-    'response.done',
-    'input_audio_buffer.committed',
-    'input_audio_buffer.speech_stopped',
-    'input_audio_buffer.speech_started',
-    'session.created',
-    'response.audio_transcript.done',
-    'conversation.item.input_audio_transcription.completed'
+
+// Something went wrong — check the error message for details.
+'error',
+
+// Assistant finished speaking or generating output.
+'response.content.done',
+
+// Updated info about usage limits or quotas.
+'rate_limits.updated',
+
+// Full response is complete — nothing more will be sent.
+'response.done',
+
+// Audio chunk sent and accepted for processing.
+'input_audio_buffer.committed',
+
+// User stopped speaking — end of speech detected.
+'input_audio_buffer.speech_stopped',
+
+// User started speaking — speech detected in audio.
+'input_audio_buffer.speech_started',
+
+   // New session has started — ready to send/receive.
+'session.created',
+
+// DEFAULT EVENTS COMPLETED, ADDING MORE BELOW IF NEEDED
+
+// Final transcript of the user's speech is ready (not necessarily includes interruptions)
+'response.audio_transcript.done',
+
+// The Realtime API has fully processed the incoming audio chunk you sent, and the final transcription text is now available
+'conversation.item.input_audio_transcription.completed'
 ];
 
 const SHOW_TIMING_MATH = false;
 
-// Root route
+// Root route (Health check endpoint)
 fastify.get('/', async (request, reply) => {
     reply.send({ message: 'AI Conference Bot Server is running on port 3001!' });
 });
 
 // Handle incoming call webhook from Twilio (when AI bot is called)
+// Announces AI is joining
+// Opens a <Stream to /media
 fastify.all('/incoming-call', async (request, reply) => {
     console.log('[AI Server] Handling incoming call for conference bot');
-    
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
                           <Response>
                               <Say>Thalia from Zeus Packaging is connecting to the conference</Say>
@@ -85,12 +121,16 @@ fastify.all('/incoming-call', async (request, reply) => {
     reply.type('text/xml').send(twimlResponse);
 });
 
+// summary: Told twilio to connect to the media-stream endpoint
+
 // WebSocket endpoint for media stream
+// IMPORTANT: Every conference call leg creates a websocket connection here
 fastify.register(async (fastify) => {
     fastify.get('/media', { websocket: true }, (connection, req) => {
         console.log('[AI Server] Client connected to media stream');
         
         // Connection-specific state
+        // keeps track of current audio stream, playback, interruptions and if the AI bot greets
         let streamSid = null;
         let latestMediaTimestamp = 0;
         let lastAssistantItem = null;
@@ -98,7 +138,9 @@ fastify.register(async (fastify) => {
         let responseStartTimestampTwilio = null;
         let hasGreeted = false;
         
-        // Connect to OpenAI
+        // Connect to OpenAI Realtime
+        // opens a WebSocket to openAI's Realtime API
+        // configures g711_ulaw (for twilio) + voice = sage
         const openAiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
             headers: {
                 Authorization: `Bearer ${OPENAI_API_KEY}`,
@@ -107,16 +149,19 @@ fastify.register(async (fastify) => {
         });
         
         // Initialize session with OpenAI
+        // configures voice settings, conference rules and speech detection
+        // sends this to OpenAI once the connection opens
         const initializeSession = () => {
             const sessionUpdate = {
                 type: 'session.update',
                 session: {
-                    turn_detection: { type: 'server_vad' },
-                    input_audio_format: 'g711_ulaw',
-                    output_audio_format: 'g711_ulaw',
+                    turn_detection: { type: 'server_vad' }, //determines that you have stopped talking
+                    input_audio_format: 'g711_ulaw', //required for twilio voice (e.g pcm not supported)
+                    output_audio_format: 'g711_ulaw', //required for twilio voice
                     voice: VOICE,
                     instructions: CONFERENCE_SYSTEM_MESSAGE,
                     modalities: ["text", "audio"],
+                    //temp: 1 = wacky, 0 = straight forward 
                     temperature: 0.7,
                 }
             };
@@ -129,8 +174,8 @@ fastify.register(async (fastify) => {
                 setTimeout(() => sendInitialGreeting(), 3000);
             }
         };
-        
-        // AI introduces itself to the conference
+        // TODO: GET RID OF GREETING
+        // AI introduces itself to the conference 
         const sendInitialGreeting = () => {
             if (hasGreeted) return;
             hasGreeted = true;
@@ -155,6 +200,7 @@ fastify.register(async (fastify) => {
         };
         
         // Handle interruption when someone starts speaking
+        // the ai cuts itself of mid-setence if interupted
         const handleSpeechStartedEvent = () => {
             if (markQueue.length > 0 && responseStartTimestampTwilio != null) {
                 const elapsedTime = latestMediaTimestamp - responseStartTimestampTwilio;
@@ -214,15 +260,17 @@ fastify.register(async (fastify) => {
                     console.log(`[AI Server] OpenAI event: ${response.type}`);
                     
                     // Log transcripts for monitoring
-                    if (response.type === 'response.audio_transcript.done') {
+                    if (response.type === 'response.audio_transcript.done') /*what bot said */ { 
                         console.log('[AI Server] Thalia said:', response.transcript);
                     }
-                    if (response.type === 'conversation.item.input_audio_transcription.completed') {
+                    if (response.type === 'conversation.item.input_audio_transcription.completed') /*what human said */ {
                         console.log('[AI Server] User said:', response.transcript);
                     }
                 }
                 
                 // Handle audio delta from OpenAI
+                // sends audio chunks from OpenAI to Twilio in real time
+                // This is how the AI bot's speech reaches the conference
                 if (response.type === 'response.audio.delta' && response.delta) {
                     const audioDelta = {
                         event: 'media',
@@ -258,7 +306,8 @@ fastify.register(async (fastify) => {
         connection.on('message', (message) => {
             try {
                 const data = JSON.parse(message);
-                
+                // takes audio from twilio partipants and stream it into OpenAI's
+                // input_audio_buffer
                 switch (data.event) {
                     case 'media':
                         // Audio from conference participants
