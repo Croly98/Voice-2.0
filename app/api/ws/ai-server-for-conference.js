@@ -49,7 +49,7 @@ const __dirname = dirname(__filename);
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; // voice model (Shimmer or Verse might be better)
 const PORT = 3001; // Different port from conference server
-const NGROK_AI_URL = '8cbef3e3f118.ngrok-free.app'; // PORT 3001
+const NGROK_AI_URL = '155b1c94477f.ngrok-free.app'; // PORT 3001
 
 console.log('[AI Server] System Instructions Loaded:\n', SYSTEM_MESSAGE);
 

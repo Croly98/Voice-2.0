@@ -21,9 +21,9 @@ import { dirname } from 'path'; // for ES modules (__dirname)
 // Load environment variables
 dotenv.config();
 
-const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
+const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, TWILIO_AI_NUMBER } = process.env;
 // error if missing credentials
-if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER || ! TWILIO_AI_NUMBER) {
     console.error('Missing Twilio credentials. Please set them in the .env file.');
     process.exit(1);
 }
@@ -38,12 +38,12 @@ const __dirname = dirname(__filename);
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 
-// Update with your own phone number in E.164 format
-const MODERATOR = '+353861790710';
+// Update with phone numbers in E.164 format
+const MODERATOR = '+35319079387'; // I think this is who starts/stops the server once they join/leave
 const PORT = 3000; // conference server
 const AI_SERVER_PORT = 3001; // AI Media Server - Port where OLD-server.js will run (currently not OLD-server)
-const NGROK_CONFERENCE_URL = 'ff3c1c367f6a.ngrok-free.app'; // Port 3000- Public URL for conference server
-const NGROK_AI_URL = '8cbef3e3f118.ngrok-free.app'; // Port 3001- public URL for AI media server
+const NGROK_CONFERENCE_URL = 'c6baa1cbc4b3.ngrok-free.app'; // Port 3000- Public URL for conference server
+const NGROK_AI_URL = '155b1c94477f.ngrok-free.app'; // Port 3001- public URL for AI media server
 
 // Conference state
 const conferenceState = {
