@@ -62,7 +62,7 @@ Step 8: CALLER SPEAKS
 Step 9: AI RESPONDS 
     - openAI replies with response.audio.delta events (audio chunks).
     - server forwards these immediately to Twilio as media events.
-    - twilio plays them into the conference → caller hears the AI voice.
+    - twilio plays them into the conference - caller hears the AI voice.
     - server also sends mark events so Twilio knows when playback aligns.
 
 
@@ -75,8 +75,8 @@ Step 10: CALLER INTERUPTS (need to make sure its not too sensitive)
 
 Step 11: CONVERSATION CONTINUES
     - each turn follows the same cycle:
-        - caller audio → /media → OpenAI
-        - openAI reply audio → /media → Twilio → conference
+        - caller audio - /media - OpenAI
+        - openAI reply audio - /media - Twilio - conference
         - marks track timing
         - truncation if caller interrupts
 
@@ -583,10 +583,10 @@ fastify.listen({ port: PORT }, (err) => {
 
 /* Final Flow Recap (like a chain)
 
-Human Caller 📞 → Twilio Call → /conference-join → Conference Room
-→ Server dials AI leg → Twilio AI Call → /conference-join?ai=true
-→ AI leg streams audio to /media WebSocket
-→ Server bridges Twilio ↔ OpenAI Realtime
-→ Caller’s voice → AI brain → AI voice back → Caller
+Human Caller - Twilio Call - /conference-join - Conference Room
+- Server dials AI leg - Twilio AI Call - /conference-join?ai=true
+- AI leg streams audio to /media WebSocket
+- Server bridges Twilio - OpenAI Realtime
+- Caller’s voice - AI brain - AI voice back - Caller
 
 */

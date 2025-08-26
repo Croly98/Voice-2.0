@@ -143,7 +143,7 @@ fastify.register(async (fastify) => {
                     content: [
                         {
                             type: 'input_text',
-                            text: 'You just joined a conference call. Briefly introduce yourself by saying: "Hello everyone, this is Thalia from Zeus Packaging. I\'m here if you have any questions about our packaging solutions."'
+                            text: 'You just joined a conference call. Briefly introduce yourself by saying: "Hello everyone, this is Thalia from Zeus Packaging. I am here if you have any questions about our packaging solutions."'
                         }
                     ]
                 }
