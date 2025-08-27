@@ -21,9 +21,9 @@ import { dirname } from 'path'; // for ES modules (__dirname)
 // Load environment variables
 dotenv.config();
 
-const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
+const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, TWILIO_AI_NUMBER } = process.env;
 // error if missing credentials
-if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER || ! TWILIO_AI_NUMBER) {
     console.error('Missing Twilio credentials. Please set them in the .env file.');
     process.exit(1);
 }
@@ -38,17 +38,18 @@ const __dirname = dirname(__filename);
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 
-// Update with your own phone number in E.164 format
-const MODERATOR = '+353861790710';
+// Update with phone numbers in E.164 format
+const MODERATOR = '+35319079387'; // I think this is who starts/stops the server once they join/leave
+const SECOND_PARTICIPANT_NUMBER = '+353861790710'; // Second participant to call when conference starts
 const PORT = 3000; // conference server
 const AI_SERVER_PORT = 3001; // AI Media Server - Port where OLD-server.js will run (currently not OLD-server)
-const NGROK_CONFERENCE_URL = 'ab1b98fd5611.ngrok-free.app'; // Port 3000- Public URL for conference server
-const NGROK_AI_URL = 'c8e02326e543.ngrok-free.app'; // Port 3001- public URL for AI media server
+const NGROK_CONFERENCE_URL = 'ff3c1c367f6a.ngrok-free.app'; // Port 3000- Public URL for conference server
+const NGROK_AI_URL = '8cbef3e3f118.ngrok-free.app'; // Port 3001- public URL for AI media server
 
 // Conference state
 const conferenceState = {
     isActive: false, // is the conference running
-    aiCallSid: null, // AI bot's call SID
+    outboundCalls: [], // Array to track all outbound call SIDs
     conferenceName: 'Zeus_Conference' // conference name (fixed)
 };
 
@@ -87,47 +88,78 @@ app.post('/voice', async (req, res) => {
     res.send(twiml.toString());
 });
 
+// Helper function to make outbound calls to participants
+async function addParticipantToConference(phoneNumber, twimlEndpoint, participantName) {
+    try {
+        const call = await client.calls.create({
+            url: `https://${NGROK_CONFERENCE_URL}${twimlEndpoint}`,
+            to: phoneNumber,
+            from: TWILIO_PHONE_NUMBER,
+            statusCallback: `https://${NGROK_CONFERENCE_URL}/outbound-call-status`,
+            statusCallbackEvent: ['initiated', 'answered', 'completed']
+        });
+        
+        conferenceState.outboundCalls.push({
+            sid: call.sid,
+            number: phoneNumber,
+            name: participantName
+        });
+        
+        console.log(`${participantName} call initiated with SID: ${call.sid} to ${phoneNumber}`);
+        return call;
+    } catch (error) {
+        console.error(`Error calling ${participantName} at ${phoneNumber}:`, error);
+        throw error;
+    }
+}
+
 // Conference status callback - handles conference events (trys to call itself for AI bot)
 app.post('/conference-status', async (req, res) => {
     const { StatusCallbackEvent, CallSid, ConferenceSid, FriendlyName } = req.body;
     
     console.log(`Conference event: ${StatusCallbackEvent} for ${FriendlyName || ConferenceSid}`);
     
-    // conference started- call AI bot
+    // conference started- call AI bot and second participant
     if (StatusCallbackEvent === 'conference-start') {
-        console.log('Conference started - Adding AI bot...');
+        console.log('Conference started - Adding participants...');
         conferenceState.isActive = true;
         
-        // Make an outbound call to add AI bot to conference
-        try {
-            const aiCall = await client.calls.create({
-                url: `https://${NGROK_CONFERENCE_URL}/ai-join-conference`,
-                to: TWILIO_PHONE_NUMBER, // Call to your Twilio number
-                from: TWILIO_PHONE_NUMBER,
-                statusCallback: `https://${NGROK_CONFERENCE_URL}/ai-call-status`,
-                statusCallbackEvent: ['initiated', 'answered', 'completed']
-            });
-            
-            conferenceState.aiCallSid = aiCall.sid;
-            console.log(`AI bot call initiated with SID: ${aiCall.sid}`);
-            
-        } catch (error) {
-            console.error('Error adding AI bot to conference:', error);
-        }
-      // end AI call if still running  
+        // Make outbound calls to both AI bot and second participant
+        const callPromises = [
+            // Call AI bot with streaming endpoint
+            addParticipantToConference(TWILIO_AI_NUMBER, '/ai-join-conference', 'AI Bot (Thalia)'),
+            // Call second participant
+            addParticipantToConference(SECOND_PARTICIPANT_NUMBER, '/participant-join-conference', 'Second Participant')
+        ];
+        
+        // Execute both calls in parallel
+        const results = await Promise.allSettled(callPromises);
+        
+        results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                console.error(`Failed to add participant ${index + 1}:`, result.reason);
+            }
+        });
+      // end all outbound calls if still running  
     } else if (StatusCallbackEvent === 'conference-end') {
         console.log('Conference ended');
         conferenceState.isActive = false;
         
-        // End AI bot call if it's still active
-        if (conferenceState.aiCallSid) {
-            try {
-                await client.calls(conferenceState.aiCallSid).update({ status: 'completed' });
-                console.log('AI bot call terminated');
-            } catch (error) {
-                console.error('Error ending AI bot call:', error);
-            }
-            conferenceState.aiCallSid = null;
+        // End all outbound calls if they're still active
+        if (conferenceState.outboundCalls.length > 0) {
+            console.log(`Terminating ${conferenceState.outboundCalls.length} outbound calls...`);
+            
+            const terminationPromises = conferenceState.outboundCalls.map(async (call) => {
+                try {
+                    await client.calls(call.sid).update({ status: 'completed' });
+                    console.log(`${call.name} call terminated (${call.sid})`);
+                } catch (error) {
+                    console.error(`Error ending ${call.name} call (${call.sid}):`, error);
+                }
+            });
+            
+            await Promise.allSettled(terminationPromises);
+            conferenceState.outboundCalls = [];
         }
      // log particpant joined or left   
     } else if (StatusCallbackEvent === 'participant-join') {
@@ -142,7 +174,7 @@ app.post('/conference-status', async (req, res) => {
 
 // TwiML for AI bot to join conference, it should do the following:
 // Plays a greeting message
-// Joins the conference silently (no beep, doesn’t end it if AI leaves)
+// Joins the conference silently (no beep, doesn't end it if AI leaves)
 // Also starts a <Stream> to WebSocket AI server (ai-server-for-conference.js)
 
 app.post('/ai-join-conference', (req, res) => {
@@ -170,10 +202,42 @@ app.post('/ai-join-conference', (req, res) => {
     res.send(twiml.toString());
 });
 
-// Status callback for AI bot call (Logs call lifecycle events for the AI bot’s leg)
-app.post('/ai-call-status', (req, res) => {
-    const { CallStatus, CallSid } = req.body;
-    console.log(`AI bot call status: ${CallStatus} (SID: ${CallSid})`);
+// TwiML for regular participant to join conference
+app.post('/participant-join-conference', (req, res) => {
+    console.log('Second participant answering call to join conference');
+    
+    const twiml = new VoiceResponse();
+    
+    // Announce they're joining
+    twiml.say('Connecting you to the Zeus Conference');
+    
+    // Join the conference
+    twiml.dial().conference(conferenceState.conferenceName, {
+        startConferenceOnEnter: false,
+        endConferenceOnExit: false,
+        beep: true  // Regular participant gets a beep
+    });
+    
+    res.type('text/xml');
+    res.send(twiml.toString());
+});
+
+// Status callback for outbound calls (Logs call lifecycle events)
+app.post('/outbound-call-status', (req, res) => {
+    const { CallStatus, CallSid, To, From } = req.body;
+    
+    // Find which participant this is
+    const participant = conferenceState.outboundCalls.find(call => call.sid === CallSid);
+    const participantName = participant ? participant.name : 'Unknown';
+    
+    console.log(`Outbound call status for ${participantName}: ${CallStatus} (SID: ${CallSid}, To: ${To})`);
+    
+    // Remove from tracking if call completed or failed
+    if (CallStatus === 'completed' || CallStatus === 'failed' || CallStatus === 'no-answer' || CallStatus === 'busy' || CallStatus === 'canceled') {
+        conferenceState.outboundCalls = conferenceState.outboundCalls.filter(call => call.sid !== CallSid);
+        console.log(`Removed ${participantName} from active calls. Remaining: ${conferenceState.outboundCalls.length}`);
+    }
+    
     res.send({ received: true });
 });
 
@@ -209,7 +273,7 @@ app.post('/add-ai-to-conference', async (req, res) => {
             url: `https://${NGROK_CONFERENCE_URL}/ai-bridge`,
             to: TWILIO_PHONE_NUMBER,
             from: TWILIO_PHONE_NUMBER,
-            statusCallback: `https://${NGROK_CONFERENCE_URL}/ai-call-status`
+            statusCallback: `https://${NGROK_CONFERENCE_URL}/outbound-call-status`
         });
         
         // After connecting to AI server, add to conference
@@ -237,9 +301,19 @@ app.post('/add-ai-to-conference', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
+    console.log('\n=====================================');
     console.log(`Conference server running on port ${PORT}`);
-    console.log(`Webhook URL: https://${NGROK_CONFERENCE_URL}/voice`);
-    console.log('');
-    console.log('IMPORTANT: Also run ai-server-for-conference.js on port 3001 for AI functionality');
-    console.log(`Update your Twilio phone number webhook to point to: https://${NGROK_CONFERENCE_URL}/voice`);
+    console.log('=====================================');
+    console.log('\nConfiguration:');
+    console.log(`- Main Number: ${TWILIO_PHONE_NUMBER}`);
+    console.log(`- AI Bot Number: ${TWILIO_AI_NUMBER}`);
+    console.log(`- Second Participant: ${SECOND_PARTICIPANT_NUMBER}`);
+    console.log(`- Moderator: ${MODERATOR}`);
+    console.log('\nWebhook URLs:');
+    console.log(`- Conference: https://${NGROK_CONFERENCE_URL}/voice`);
+    console.log(`- AI Server: wss://${NGROK_AI_URL}/media`);
+    console.log('\nIMPORTANT:');
+    console.log('1. Run ai-server-for-conference.js on port 3001');
+    console.log('2. Update Twilio phone number webhook to: https://${NGROK_CONFERENCE_URL}/voice');
+    console.log('3. When moderator calls, both AI bot and second participant will be called automatically\n');
 });
