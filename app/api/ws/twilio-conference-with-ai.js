@@ -42,8 +42,8 @@ app.use(express.urlencoded({ extended: false }));
 const MODERATOR = '+353861790710';
 const PORT = 3000; // conference server
 const AI_SERVER_PORT = 3001; // AI Media Server - Port where OLD-server.js will run (currently not OLD-server)
-const NGROK_CONFERENCE_URL = 'ff3c1c367f6a.ngrok-free.app'; // Port 3000- Public URL for conference server
-const NGROK_AI_URL = '8cbef3e3f118.ngrok-free.app'; // Port 3001- public URL for AI media server
+const NGROK_CONFERENCE_URL = 'ab1b98fd5611.ngrok-free.app'; // Port 3000- Public URL for conference server
+const NGROK_AI_URL = 'c8e02326e543.ngrok-free.app'; // Port 3001- public URL for AI media server
 
 // Conference state
 const conferenceState = {
