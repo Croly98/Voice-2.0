@@ -42,7 +42,7 @@ const __dirname = dirname(__filename);
 // system message connected with instructions
 
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
-const VOICE = 'sage'; //find the best voice
+const VOICE = 'sage'; //find the best voice (Shimmer or Verse might be better)
 const PORT = 3000 // Allow dynamic port assignment (keep on 3000 for Twilio)
 
 //log for instructions.txt file
@@ -153,7 +153,7 @@ fastify.register(async (fastify) => {
                     instructions: SYSTEM_MESSAGE,
                     modalities: ["text", "audio"],
                     //temp: 1 = wacky, 0 = straight forward 
-                    temperature: 0.7,
+                    temperature: 0.6,
                 }
             };
             // once the session is defined ^ (we tell it everything we want)

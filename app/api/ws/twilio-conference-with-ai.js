@@ -23,7 +23,7 @@ dotenv.config();
 
 const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, TWILIO_AI_NUMBER } = process.env;
 // error if missing credentials
-if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER || ! TWILIO_AI_NUMBER) {
+if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER || !TWILIO_AI_NUMBER) {
     console.error('Missing Twilio credentials. Please set them in the .env file.');
     process.exit(1);
 }
