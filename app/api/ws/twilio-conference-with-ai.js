@@ -10,7 +10,7 @@ AI can speak/listen in real-time inside the conference.
 
 */
 
-
+// https://PORT3000.app/voice
 
 import express from 'express'; // web server
 import twilio from 'twilio'; // twilio API + TwiML generator
@@ -39,8 +39,8 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 
 // Update with phone numbers in E.164 format
-const MODERATOR = '+35319079387'; // I think this is who starts/stops the server once they join/leave
-const SECOND_PARTICIPANT_NUMBER = '+353861790710'; // Second participant to call when conference starts
+const MODERATOR = '+353861790710'; // I think this is who starts/stops the server once they join/leave
+const SECOND_PARTICIPANT_NUMBER = '+35319079387'; // Second participant to call when conference starts
 const PORT = 3000; // conference server
 const AI_SERVER_PORT = 3001; // AI Media Server - Port where OLD-server.js will run (currently not OLD-server)
 const NGROK_CONFERENCE_URL = 'ff3c1c367f6a.ngrok-free.app'; // Port 3000- Public URL for conference server
