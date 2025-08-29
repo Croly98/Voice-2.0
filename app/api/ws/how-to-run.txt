@@ -1,3 +1,65 @@
+
+CONFERENCE
+
+twilio-conference-with-ai.js
+
+console- https://PORT3000.ngrok-free.app/voice
+Update ports
+
+
+  1. Run twilio-conference-with-ai.js first
+  2. Update NGROK_URL if it changes
+  3. Run con-outbound-caller.js to call people into the conference
+
+
+  AI
+  
+  
+  OLD-server.js
+
+  Twilio Console- https://PORT3001.ngrok-free.app/incoming-call
+
+  │ 1. Port Configuration: Running on port 3001 (line 46)                                                        │ │
+│ │ 2. Incoming Call Handler: /incoming-call endpoint properly configured (lines 99-116)                         │ │
+│ │ 3. WebSocket Media Stream: /media endpoint for real-time audio (line 125)                                    │ │
+│ │ 4. OpenAI Integration: Connects to OpenAI Realtime API with proper auth                                      │ │
+│ │ 5. Audio Format: Using g711_ulaw format required by Twilio                                                   │ │
+│ │ 6. AI Instructions: Loading from instructions.txt (Thalia sales assistant)  
+
+How to Use:                                                                                                  │ │
+│ │                                                                                                              │ │
+│ │ 1. Start the AI server: node OLD-server.js (runs on port 3001)                                               │ │
+│ │ 2. Configure Twilio webhook to: https://[your-ngrok-url]/incoming-call                                       │ │
+│ │ 3. When calls come in, they'll connect to the AI (Thalia) for 1-on-1 conversation                            │ │
+│ │                                                                                                              │ │
+│ │ The server will work for direct AI calls but needs the ngrok URL fix for reliable WebSocket connections.  
+
+
+How to use:
+
+  1. Start AI server first: node OLD-server.js (port 3001)
+  2. Update phone number in the script (line 21)
+  3. Run: node ai-outbound-caller.js
+
+  The AI will:
+  - Call the target number
+  - Introduce herself as Thalia from Zeus Packaging
+  - Have a full sales conversation using the instructions from instructions.txt
+  - Check if they need packaging supplies
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Updated Configuration:
 
   - Conference Server (port 3000): https://ff3c1c367f6a.ngrok-free.app

@@ -43,7 +43,8 @@ const __dirname = dirname(__filename);
 
 const SYSTEM_MESSAGE = fs.readFileSync(path.join(__dirname, 'instructions.txt'), 'utf-8');
 const VOICE = 'sage'; //find the best voice (Shimmer or Verse might be better)
-const PORT = 3000 // Allow dynamic port assignment (keep on 3000 for Twilio)
+const PORT = 3001 // Allow dynamic port assignment (keep on 3001 for Twilio)
+const NGROK_URL = '1617b95fffee.ngrok-free.app'; // Update with your current ngrok URL for port 3001
 
 //log for instructions.txt file
 console.log('[System Instructions Loaded]:\n', SYSTEM_MESSAGE);
@@ -108,7 +109,7 @@ fastify.all('/incoming-call', async (request, reply) => {
                               <Pause length=".33"/>
                               <Say>Connected</Say>
                               <Connect>
-                                  <Stream url="wss://${request.headers.host}/media" />
+                                  <Stream url="wss://${NGROK_URL}/media" />
                               </Connect>
                           </Response>`;
 

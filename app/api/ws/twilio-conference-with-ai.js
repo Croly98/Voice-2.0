@@ -43,8 +43,8 @@ const MODERATOR = '+353861790710'; // I think this is who starts/stops the serve
 const SECOND_PARTICIPANT_NUMBER = '+35319079387'; // Second participant to call when conference starts
 const PORT = 3000; // conference server
 const AI_SERVER_PORT = 3001; // AI Media Server - Port where OLD-server.js will run (currently not OLD-server)
-const NGROK_CONFERENCE_URL = 'ff3c1c367f6a.ngrok-free.app'; // Port 3000- Public URL for conference server
-const NGROK_AI_URL = '8cbef3e3f118.ngrok-free.app'; // Port 3001- public URL for AI media server
+const NGROK_CONFERENCE_URL = '7330f011bb18.ngrok-free.app'; // Port 3000- Public URL for conference server
+const NGROK_AI_URL = '1617b95fffee.ngrok-free.app'; // Port 3001- public URL for AI media server
 
 // Conference state
 const conferenceState = {
@@ -208,7 +208,7 @@ app.post('/participant-join-conference', (req, res) => {
     
     const twiml = new VoiceResponse();
     
-    // Announce they're joining
+    // Announce they're joining IT SAYS THIS WITH OTUBOUND-CALLER.JS
     twiml.say('Connecting you to the Zeus Conference');
     
     // Join the conference
@@ -314,6 +314,6 @@ app.listen(PORT, () => {
     console.log(`- AI Server: wss://${NGROK_AI_URL}/media`);
     console.log('\nIMPORTANT:');
     console.log('1. Run ai-server-for-conference.js on port 3001');
-    console.log('2. Update Twilio phone number webhook to: https://${NGROK_CONFERENCE_URL}/voice');
+    console.log(`2. Update Twilio phone number webhook to: https://${NGROK_CONFERENCE_URL}/voice`);
     console.log('3. When moderator calls, both AI bot and second participant will be called automatically\n');
 });
