@@ -18,7 +18,7 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 // ============================================
 
 // Phone number to call (CHANGE THIS!)
-const TARGET_PHONE = '+353861790710'; // Replace with the number you want the AI to call
+const TARGET_PHONE = '+16073094981'; // Replace with the number you want the AI to call
 
 // Your AI server ngrok URL (must match OLD-server.js)
 const AI_NGROK_URL = 'https://1617b95fffee.ngrok-free.app'; // Port 3001 - Update if changed
