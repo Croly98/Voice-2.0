@@ -1,4 +1,18 @@
 
+How to run afer completing ports
+
+(607) 309-4981 - https://PORT3000.ngrok-free.app/voice
++35319079387 - https://PORT3001.ngrok-free.app/incoming-call
+
+then run:
+
+node app/api/ws/twilio-conference-with-ai.js
+node app/api/ws/con-outbound-caller.js
+node app/api/ws/OLD-server.js
+node app/api/ws/ai-outbound-caller.js
+
+
+
 CONFERENCE
 
 twilio-conference-with-ai.js
