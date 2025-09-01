@@ -117,7 +117,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPho
       <small id="salesHelp" style={{ display: 'block', marginBottom: '12px', color: 'black' }}>
         Enter sales phone number in international format (e.g. +353...)
       </small>
-
+        <br></br>
       {/* AI number input */}
       <label htmlFor="ai">AI Bot Phone Number</label>
       <input
@@ -141,7 +141,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPho
       <small id="aiHelp" style={{ display: 'block', marginBottom: '12px', color: 'black' }}>
         Enter AI bot phone number in international format (e.g. +353...)
       </small>
-
+        <br></br>
       {/* Customer number input */}
       <label htmlFor="customer">Customer Phone Number</label>
       <input
@@ -165,7 +165,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPho
       <small id="customerHelp" style={{ display: 'block', marginBottom: '12px', color: 'black' }}>
         Enter customer phone number in international format (e.g. +353...)
       </small>
-
+        <br></br>
       {/* Submit button */}
       <button
         type="submit"
@@ -177,6 +177,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPho
           backgroundColor: loading ? '#ccc' : '#28a745',
           color: '#fff',
           border: 'none',
+          marginLeft: '100px',
           borderRadius: '4px',
           cursor: loading ? 'not-allowed' : 'pointer',
         }}
