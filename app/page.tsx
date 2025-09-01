@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import CallInterface from './other-files/TTS-STT-Project/components/CallInterface';
-import PhoneInputForm from './other-files/TTS-STT-Project/components/PhoneInputForm';
-import CallStatus from './other-files/TTS-STT-Project/components/CallStatus';
+import CallInterface from './api/ws/components/CallInterface';
+import PhoneInputForm from './api/ws/components/PhoneInputForm';
+import CallStatus from './api/ws/components/CallStatus';
 import Image from 'next/image';
 
 // displays a form for initiating a call (PhoneInputForm)
@@ -22,9 +22,15 @@ import Image from 'next/image';
 
 export default function Home() {
   // Main production-ready call UI:
-  // Store sessionId and phoneNumber in state
+  // Store sessionId and phoneNumbers in state
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [phoneNumbers, setPhoneNumbers] = useState<{ sales: string; ai: string; customer: string } | null>(null);
+
+  // Handles ending the call and resetting the UI
+  const handleEndCall = () => {
+    setSessionId(null);
+    setPhoneNumbers(null);
+  };
 
   return (
     <>
@@ -53,13 +59,23 @@ export default function Home() {
           {!sessionId && (
             <PhoneInputForm
               onSessionCreated={setSessionId}
-              onPhoneNumberEntered={setPhoneNumber} // pass phone number setter
+              onPhoneNumbersEntered={setPhoneNumbers} // pass phone numbers setter
             />
           )}
 
           {/* Show call status and call interface if session exists */}
-          {sessionId && <CallStatus sessionId={sessionId} />}
-          {sessionId && <CallInterface sessionId={sessionId} phoneNumber={phoneNumber} />}
+          {sessionId && phoneNumbers && (
+            <>
+              <CallStatus 
+                phoneNumbers={phoneNumbers} 
+                onEndCall={handleEndCall} 
+              />
+              <CallInterface 
+                sessionId={sessionId} 
+                phoneNumbers={phoneNumbers} 
+              />
+            </>
+          )}
         </div>
 
         {/* Footer stays at bottom */}

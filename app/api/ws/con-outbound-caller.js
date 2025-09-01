@@ -23,8 +23,10 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 // ============================================
 // CHANGE THESE NUMBERS
 // ============================================
-const PHONE_1 = '+353861790710';  // First number to call
-//const PHONE_2 = '+35319079387';   // Second number (comment out if not needed)
+const PHONE_1 = '+353861790710';   // First number to call (sales)
+//const PHONE_2 = '+35319079387';  // Second number (AI)
+//const PHONE_3 = '+35300000000';  // Third number (Cust)
+
 
 // Conference settings
 const CONFERENCE_NAME = 'Zeus_Conference';
@@ -57,15 +59,23 @@ async function callNumber(phoneNumber, label) {
 async function makeAllCalls() {
     console.log('🚀 Starting outbound calls...\n');
     
-    // Call first number
+    // Call first number (sales)
     await callNumber(PHONE_1, 'Phone 1');
     
-    // Wait 2 seconds between calls
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait 1.5 seconds between calls
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Call second number (if provided)
+    // Call second number (AI)
     if (PHONE_2) {
         await callNumber(PHONE_2, 'Phone 2');
+    }
+
+    // Wait 3 seconds between calls
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Call third number (Cust)
+    if (PHONE_3) {
+        await callNumber(PHONE_3, 'Phone 3');
     }
     
     console.log('\n✅ All calls initiated!');
