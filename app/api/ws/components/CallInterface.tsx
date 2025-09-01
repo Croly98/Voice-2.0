@@ -39,7 +39,8 @@ const CallInterface: React.FC<CallInterfaceProps> = ({ sessionId, phoneNumbers }
       playAudioBuffer(audioData);
     }
   }, [audioData, playAudioBuffer]);
-
+// TODO: might have to add another number slot for the
+// number you are calling from aka the Twilio Conference number
   return (
     <div>
       <h1>Live Call Interface</h1>
