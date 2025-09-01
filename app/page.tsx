@@ -80,7 +80,7 @@ export default function Home() {
 
         {/* Footer stays at bottom */}
         <footer className="text-black-600 text-sm text-center pt-8">
-          © 2025 Zeus Packaging Group
+          © 2025 Zeus Packaging Group 
         </footer>
       </main>
     </>
