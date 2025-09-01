@@ -21,7 +21,7 @@ dotenv.config();
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // ============================================
-// CHANGE THESE NUMBERS
+// PHONE THESE NUMBERS
 // ============================================
 const PHONE_1 = '+353861790710';   // First number to call (sales)
 //const PHONE_2 = '+35319079387';  // Second number (AI)
@@ -70,7 +70,7 @@ async function makeAllCalls() {
         await callNumber(PHONE_2, 'Phone 2');
     }
 
-    // Wait 3 seconds between calls
+    // Wait 3 seconds between calls (I did this so that sales and AI have time to join)
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Call third number (Cust)

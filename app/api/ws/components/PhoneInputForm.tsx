@@ -125,7 +125,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPho
         type="tel"
         value={ai}
         onChange={e => setAi(e.target.value)}
-        placeholder="+353861234568"
+        placeholder="+353861234567"
         required
         aria-describedby="aiHelp"
         style={{
@@ -149,7 +149,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPho
         type="tel"
         value={customer}
         onChange={e => setCustomer(e.target.value)}
-        placeholder="+353861234569"
+        placeholder="+353861234567"
         required
         aria-describedby="customerHelp"
         style={{
