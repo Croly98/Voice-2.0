@@ -177,7 +177,7 @@ const PhoneInputForm: React.FC<PhoneInputFormProps> = ({ onSessionCreated, onPho
           backgroundColor: loading ? '#ccc' : '#28a745',
           color: '#fff',
           border: 'none',
-          marginLeft: '100px',
+          marginLeft: '115px',
           borderRadius: '4px',
           cursor: loading ? 'not-allowed' : 'pointer',
         }}
