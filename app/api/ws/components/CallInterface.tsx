@@ -9,17 +9,18 @@
  * 
  * 
  * 
+ /**
  * CallInterface.tsx
  *
  * Main UI for handling a live call session.
  * Sales agent sees real-time updates and hears AI responses.
- * Will support microphone input and audio playback.
+ * Supports microphone input and audio playback via hooks.
  */
 
 import React, { useEffect, useState } from 'react';
-import CallStatus from './CallStatus'; // 
-import useWebSocket  from '..//hooks/useWebSocket'; // 
-import useAudioPlayer from '..//hooks/useAudioPlayer'; // 
+import CallStatus from './CallStatus';
+import useWebSocket from 'app/api/ws/hooks/useWebSocket';
+import useAudioPlayer from 'app/api/ws/hooks/useAudioPlayer';
 
 interface CallInterfaceProps {
   sessionId: string;
@@ -27,8 +28,8 @@ interface CallInterfaceProps {
 }
 
 const CallInterface: React.FC<CallInterfaceProps> = ({ sessionId, phoneNumbers }) => {
-  const [status, setStatus] = useState<string | undefined>('Call started...');
-  const { audioData, sendAudio } = useWebSocket(sessionId);
+  const [status, setStatus] = useState<string>('Call started...');
+  const { audioData } = useWebSocket(sessionId);
   const { playAudioBuffer } = useAudioPlayer();
 
   // Play AI response when audio is received
@@ -37,22 +38,11 @@ const CallInterface: React.FC<CallInterfaceProps> = ({ sessionId, phoneNumbers }
       setStatus('AI is speaking...');
       playAudioBuffer(audioData);
     }
-  }, [audioData]);
-
-  // Dummy test button to simulate sending audio later
-  const handleTestSend = async () => {
-    const testAudio = await fetch('/test/test.mp3'); // place test.mp3 in public/test/
-    const buffer = await testAudio.arrayBuffer();
-    sendAudio(buffer);
-    setStatus('Sending test audio...');
-  };
-  // button not working, tested .mp3 another way
+  }, [audioData, playAudioBuffer]);
 
   return (
     <div>
       <h1>Live Call Interface</h1>
-
-      <button onClick={handleTestSend}>📧 Send Test Audio to Server</button>
 
       <div style={{ marginTop: '1rem' }}>
         <p><strong>Sales:</strong> {phoneNumbers.sales}</p>
